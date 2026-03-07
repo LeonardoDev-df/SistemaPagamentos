@@ -29,8 +29,16 @@ export function LoginPage() {
     try {
       setSubmitting(true);
       await signInWithEmail(data.email, data.password);
-    } catch {
-      toast.error("Email ou senha inválidos");
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        toast.error("Email ou senha inválidos");
+      } else if (code === "auth/operation-not-allowed") {
+        toast.error("Login com email não está habilitado. Ative no Firebase Console.");
+      } else {
+        console.error("Email sign-in error:", code, err);
+        toast.error("Erro ao fazer login. Tente novamente.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -40,8 +48,20 @@ export function LoginPage() {
     try {
       setSubmitting(true);
       await signInWithGoogle();
-    } catch {
-      toast.error("Erro ao entrar com Google");
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code ?? "";
+      if (code === "auth/popup-closed-by-user") {
+        return; // user closed popup, no error
+      } else if (code === "auth/unauthorized-domain") {
+        toast.error("Domínio não autorizado. Adicione este domínio no Firebase Console → Authentication → Settings → Authorized domains.");
+      } else if (code === "auth/operation-not-allowed") {
+        toast.error("Login com Google não está habilitado. Ative no Firebase Console → Authentication → Sign-in method.");
+      } else if (code === "auth/internal-error") {
+        toast.error("Erro interno do Firebase. Verifique as configurações do projeto.");
+      } else {
+        console.error("Google sign-in error:", code, err);
+        toast.error(`Erro ao entrar com Google: ${code || "desconhecido"}`);
+      }
     } finally {
       setSubmitting(false);
     }

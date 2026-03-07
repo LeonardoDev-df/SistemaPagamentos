@@ -40,7 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const res = await api.post("/api/auth/verify");
           setUser(res.data.data);
-        } catch {
+        } catch (err) {
+          console.error("Erro ao verificar usuário no backend:", err);
           setUser(null);
         }
       } else {
