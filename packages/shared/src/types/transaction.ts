@@ -10,9 +10,9 @@ export interface StatusChange {
 
 export interface Transaction {
   id: string;
+  cardId: string;
   cardValue: number;
   cardBalance: number;
-  cardPassword?: string;
   cardType: "VR" | "VA";
   cardBrand?: string;
 
@@ -38,19 +38,15 @@ export interface Transaction {
 }
 
 export interface CreateTransactionRequest {
+  cardId: string;
   cardValue: number;
   cardBalance: number;
-  cardPassword: string;
-  cardType: "VR" | "VA";
-  cardBrand?: string;
-  compradorId: string;
   saleDate: string;
   feePercentage?: number;
 }
 
 export interface UpdateTransactionRequest {
   cardBalance?: number;
-  cardPassword?: string;
   status?: TransactionStatus;
   statusNote?: string;
 }

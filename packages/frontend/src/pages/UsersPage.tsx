@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -25,6 +26,7 @@ export function UsersPage() {
   const pageTitle = isAdmin ? "Compradores" : "Vendedores";
   const buttonLabel = isAdmin ? "Novo Comprador" : "Novo Vendedor";
 
+  const navigate = useNavigate();
   const { data: users, isLoading } = useUsers(targetRole);
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
@@ -112,6 +114,15 @@ export function UsersPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
+                      {!isAdmin && (
+                        <button
+                          onClick={() => navigate(`/usuarios/${u.uid}`)}
+                          className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600"
+                          title="Cartões"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => setEditingUser(u)}
                         className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
@@ -164,6 +175,11 @@ export function UsersPage() {
             </div>
             {u.phone && <p className="text-sm text-gray-500">Tel: {u.phone}</p>}
             <div className="flex gap-2 pt-1">
+              {!isAdmin && (
+                <Button size="sm" variant="secondary" onClick={() => navigate(`/usuarios/${u.uid}`)}>
+                  <CreditCard className="h-3.5 w-3.5" /> Cartões
+                </Button>
+              )}
               <Button size="sm" variant="secondary" onClick={() => setEditingUser(u)}>
                 <Edit2 className="h-3.5 w-3.5" /> Editar
               </Button>

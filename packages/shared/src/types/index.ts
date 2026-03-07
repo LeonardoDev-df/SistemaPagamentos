@@ -1,4 +1,5 @@
 export type { User, CreateUserRequest, UpdateUserRequest } from "./user";
+export type { Card, CreateCardRequest, UpdateCardRequest } from "./card";
 export type {
   Transaction,
   StatusChange,

@@ -29,10 +29,10 @@ export function useCreateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Transação criada com sucesso!");
+      toast.success("Venda registrada com sucesso!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Erro ao criar transação");
+      toast.error(error.response?.data?.error || "Erro ao registrar venda");
     },
   });
 }

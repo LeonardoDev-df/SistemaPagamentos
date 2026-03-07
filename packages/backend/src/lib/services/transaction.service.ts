@@ -12,10 +12,9 @@ import {
 import { adminDb, adminStorage } from "../firebase/admin";
 import { AuthenticatedUser } from "../middleware/auth";
 import { ApiError } from "../utils/response";
-import { encrypt, decrypt } from "../utils/encryption";
 import { calculateFee } from "../utils/calculations";
 import { SettingsService } from "./settings.service";
-import { UserService } from "./user.service";
+import { CardService } from "./card.service";
 
 const TRANSACTIONS_COLLECTION = "transactions";
 
@@ -24,27 +23,31 @@ export class TransactionService {
     data: CreateTransactionRequest,
     user: AuthenticatedUser
   ): Promise<Transaction> {
+    // Get card info
+    const card = await CardService.getById(data.cardId);
+
     const feePercentage = data.feePercentage ?? (await SettingsService.getDefaultFeePercentage());
     const { feeAmount, netAmount } = calculateFee(data.cardBalance, feePercentage);
 
-    const comprador = await UserService.getById(data.compradorId);
-    const vendedor = await UserService.getById(user.uid);
+    // Comprador is the logged-in user, vendedor comes from the card
+    const compradorDoc = await adminDb.collection("users").doc(user.uid).get();
+    const compradorName = compradorDoc.exists ? compradorDoc.data()!.displayName : user.email;
 
     const now = new Date().toISOString();
     const docRef = adminDb.collection(TRANSACTIONS_COLLECTION).doc();
 
     const transaction: Transaction = {
       id: docRef.id,
+      cardId: data.cardId,
       cardValue: data.cardValue,
       cardBalance: data.cardBalance,
-      cardPassword: encrypt(data.cardPassword),
-      cardType: data.cardType,
-      cardBrand: data.cardBrand,
+      cardType: card.cardType,
+      cardBrand: card.cardBrand,
 
-      vendedorId: user.uid,
-      vendedorName: vendedor.displayName,
-      compradorId: data.compradorId,
-      compradorName: comprador.displayName,
+      vendedorId: card.vendedorId,
+      vendedorName: card.vendedorName,
+      compradorId: user.uid,
+      compradorName,
 
       feePercentage,
       feeAmount,
@@ -57,7 +60,7 @@ export class TransactionService {
           to: TransactionStatus.COMPRADO,
           changedBy: user.uid,
           changedAt: now,
-          note: "Transação criada",
+          note: "Venda registrada",
         },
       ],
 
@@ -67,22 +70,15 @@ export class TransactionService {
     };
 
     await docRef.set(transaction);
-    return { ...transaction, cardPassword: undefined };
+    return transaction;
   }
 
-  static async getById(id: string, includePassword = false): Promise<Transaction> {
+  static async getById(id: string): Promise<Transaction> {
     const doc = await adminDb.collection(TRANSACTIONS_COLLECTION).doc(id).get();
     if (!doc.exists) {
       throw new ApiError(404, "Transação não encontrada");
     }
-
-    const transaction = doc.data() as Transaction;
-    if (includePassword && transaction.cardPassword) {
-      transaction.cardPassword = decrypt(transaction.cardPassword);
-    } else {
-      transaction.cardPassword = undefined;
-    }
-    return transaction;
+    return doc.data() as Transaction;
   }
 
   static async list(
@@ -119,11 +115,7 @@ export class TransactionService {
     query = query.limit(limit);
 
     const snapshot = await query.get();
-    const transactions = snapshot.docs.map((doc) => {
-      const data = doc.data() as Transaction;
-      data.cardPassword = undefined;
-      return data;
-    });
+    const transactions = snapshot.docs.map((doc) => doc.data() as Transaction);
 
     return {
       success: true,
@@ -208,10 +200,6 @@ export class TransactionService {
       const { feeAmount, netAmount } = calculateFee(data.cardBalance, current.feePercentage);
       updates.feeAmount = feeAmount;
       updates.netAmount = netAmount;
-    }
-
-    if (data.cardPassword) {
-      updates.cardPassword = encrypt(data.cardPassword);
     }
 
     await adminDb.collection(TRANSACTIONS_COLLECTION).doc(id).update(updates);
