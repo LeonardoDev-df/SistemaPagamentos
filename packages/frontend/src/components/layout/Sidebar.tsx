@@ -19,10 +19,10 @@ interface SidebarProps {
 }
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
     isActive
-      ? "bg-indigo-50 text-indigo-700"
-      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+      ? "bg-primary-600 text-white shadow-md shadow-primary-600/30"
+      : "text-gray-400 hover:bg-white/5 hover:text-white"
   }`;
 
 export function Sidebar({ open, onClose }: SidebarProps) {
@@ -33,73 +33,90 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     <>
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transition-transform lg:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-gray-900 flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-6 w-6 text-indigo-600" />
-            <span className="font-bold text-gray-900">SisPag</span>
+        {/* Logo */}
+        <div className="flex items-center justify-between h-16 px-5 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-600/30">
+              <CreditCard className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <span className="font-bold text-white text-lg">SisPag</span>
+              <p className="text-[10px] text-gray-500 -mt-0.5">Controle de Pagamentos</p>
+            </div>
           </div>
-          <button onClick={onClose} className="lg:hidden p-1 rounded hover:bg-gray-100">
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-gray-400"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
+        {/* User card */}
+        <div className="mx-4 mt-4 p-3 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-semibold text-sm shrink-0">
+              {user?.displayName?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white truncate">{user?.displayName}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <p className="px-3 mb-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Menu</p>
+
           {(role === UserRole.ADMIN || role === UserRole.VENDEDOR) && (
             <NavLink to={ROUTES.DASHBOARD} end className={navItemClass} onClick={onClose}>
-              <LayoutDashboard className="h-5 w-5" />
+              <LayoutDashboard className="h-5 w-5 shrink-0" />
               Dashboard
             </NavLink>
           )}
 
-          {(role === UserRole.ADMIN || role === UserRole.VENDEDOR) && (
-            <NavLink to={ROUTES.TRANSACTIONS} className={navItemClass} onClick={onClose}>
-              <ArrowLeftRight className="h-5 w-5" />
-              Transações
-            </NavLink>
-          )}
-
-          {role === UserRole.COMPRADOR && (
-            <NavLink to={ROUTES.TRANSACTIONS} className={navItemClass} onClick={onClose}>
-              <ArrowLeftRight className="h-5 w-5" />
-              Minhas Transações
-            </NavLink>
-          )}
+          <NavLink to={ROUTES.TRANSACTIONS} className={navItemClass} onClick={onClose}>
+            <ArrowLeftRight className="h-5 w-5 shrink-0" />
+            {role === UserRole.COMPRADOR ? "Minhas Transações" : "Transações"}
+          </NavLink>
 
           {role === UserRole.ADMIN && (
-            <NavLink to={ROUTES.USERS} className={navItemClass} onClick={onClose}>
-              <Users className="h-5 w-5" />
-              Usuários
-            </NavLink>
-          )}
-
-          {role === UserRole.ADMIN && (
-            <NavLink to={ROUTES.SETTINGS} className={navItemClass} onClick={onClose}>
-              <Settings className="h-5 w-5" />
-              Configurações
-            </NavLink>
+            <>
+              <p className="px-3 mt-5 mb-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Administração</p>
+              <NavLink to={ROUTES.USERS} className={navItemClass} onClick={onClose}>
+                <Users className="h-5 w-5 shrink-0" />
+                Usuários
+              </NavLink>
+              <NavLink to={ROUTES.SETTINGS} className={navItemClass} onClick={onClose}>
+                <Settings className="h-5 w-5 shrink-0" />
+                Configurações
+              </NavLink>
+            </>
           )}
         </nav>
 
-        <div className="border-t border-gray-200 px-3 py-4 space-y-1">
+        {/* Footer */}
+        <div className="border-t border-white/10 px-3 py-3 space-y-1">
           <NavLink to={ROUTES.PROFILE} className={navItemClass} onClick={onClose}>
-            <UserCircle className="h-5 w-5" />
+            <UserCircle className="h-5 w-5 shrink-0" />
             Meu Perfil
           </NavLink>
           <button
             onClick={signOut}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full"
           >
-            <LogOut className="h-5 w-5" />
+            <LogOut className="h-5 w-5 shrink-0" />
             Sair
           </button>
         </div>
