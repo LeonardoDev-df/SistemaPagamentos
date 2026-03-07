@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { updateUserSchema } from "@sistema-pagamentos/shared";
+import { UpdateUserRequest, updateUserSchema } from "@sistema-pagamentos/shared";
 import { authenticateRequest } from "@/lib/middleware/auth";
 import { validateBody } from "@/lib/middleware/validate";
 import { UserService } from "@/lib/services/user.service";
@@ -19,7 +19,7 @@ export async function PUT(req: NextRequest) {
   try {
     const authUser = await authenticateRequest(req);
     const body = await req.json();
-    const validated = validateBody(updateUserSchema, body);
+    const validated = validateBody(updateUserSchema, body) as UpdateUserRequest;
 
     // Non-admin users cannot change their own role
     if (authUser.role !== "ADMIN") {

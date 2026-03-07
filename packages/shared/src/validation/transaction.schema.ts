@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TransactionStatus } from "../enums/transaction-status";
 
 export const createTransactionSchema = z.object({
   cardValue: z.number().positive("Valor do cartão deve ser positivo"),
@@ -14,6 +15,6 @@ export const createTransactionSchema = z.object({
 export const updateTransactionSchema = z.object({
   cardBalance: z.number().min(0).optional(),
   cardPassword: z.string().min(1).optional(),
-  status: z.enum(["COMPRADO", "NAO_PAGO", "PAGO", "CARTAO_OK", "CANCELADO"]).optional(),
+  status: z.nativeEnum(TransactionStatus).optional(),
   statusNote: z.string().optional(),
 });
