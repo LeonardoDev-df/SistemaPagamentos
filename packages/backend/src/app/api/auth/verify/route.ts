@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
     );
     return apiResponse(user);
   } catch (error) {
+    console.error("[verify] Error:", error);
     return apiError(error);
   }
 }
