@@ -1,0 +1,16 @@
+{
+  "name": "sistema-pagamentos",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:frontend": "pnpm --filter @sistema-pagamentos/frontend dev",
+    "dev:backend": "pnpm --filter @sistema-pagamentos/backend dev",
+    "build": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  }
+}
