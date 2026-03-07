@@ -4,9 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { Loading } from "@/components/ui/Loading";
+import { useAuth } from "@/contexts/AuthContext";
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from "@/hooks/useUsers";
 import {
   CreateUserRequest,
@@ -16,14 +16,16 @@ import {
   createUserSchema,
 } from "@sistema-pagamentos/shared";
 
-const roleOptions = [
-  { value: "ADMIN", label: "Administrador" },
-  { value: "VENDEDOR", label: "Vendedor" },
-  { value: "COMPRADOR", label: "Comprador" },
-];
-
 export function UsersPage() {
-  const { data: users, isLoading } = useUsers();
+  const { user: currentUser } = useAuth();
+  const isAdmin = currentUser?.role === UserRole.ADMIN;
+
+  // Admin sees compradores, Comprador sees vendedores
+  const targetRole = isAdmin ? UserRole.COMPRADOR : UserRole.VENDEDOR;
+  const pageTitle = isAdmin ? "Compradores" : "Vendedores";
+  const buttonLabel = isAdmin ? "Novo Comprador" : "Novo Vendedor";
+
+  const { data: users, isLoading } = useUsers(targetRole);
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
@@ -38,12 +40,15 @@ export function UsersPage() {
     formState: { errors },
   } = useForm<CreateUserRequest>({
     resolver: zodResolver(createUserSchema),
+    defaultValues: { role: targetRole },
   });
 
   const onCreateSubmit = async (data: CreateUserRequest) => {
+    // Force the correct role
+    data.role = targetRole;
     await createUser.mutateAsync(data);
     setCreateModal(false);
-    reset();
+    reset({ role: targetRole });
   };
 
   const handleUpdate = async (data: UpdateUserRequest) => {
@@ -62,27 +67,28 @@ export function UsersPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Usuários</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
         <Button
           size="sm"
           onClick={() => {
-            reset();
+            reset({ role: targetRole });
             setCreateModal(true);
           }}
         >
           <Plus className="h-4 w-4" />
-          Novo Usuário
+          {buttonLabel}
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      {/* Desktop table */}
+      <div className="hidden sm:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Nome</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Email</th>
-                <th className="px-4 py-3 text-left font-medium text-gray-500">Role</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-500">Telefone</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Status</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-500">Ações</th>
               </tr>
@@ -92,11 +98,7 @@ export function UsersPage() {
                 <tr key={u.uid} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{u.displayName}</td>
                   <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                      {u.role}
-                    </span>
-                  </td>
+                  <td className="px-4 py-3 text-gray-600">{u.phone || "-"}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
@@ -126,13 +128,55 @@ export function UsersPage() {
                   </td>
                 </tr>
               ))}
+              {(users ?? []).length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                    Nenhum {targetRole === UserRole.COMPRADOR ? "comprador" : "vendedor"} cadastrado.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* Mobile cards */}
+      <div className="sm:hidden space-y-3">
+        {(users ?? []).length === 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-400">
+            Nenhum {targetRole === UserRole.COMPRADOR ? "comprador" : "vendedor"} cadastrado.
+          </div>
+        )}
+        {(users ?? []).map((u) => (
+          <div key={u.uid} className="bg-white rounded-xl border border-gray-200 p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">{u.displayName}</p>
+                <p className="text-sm text-gray-500">{u.email}</p>
+              </div>
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                  u.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                }`}
+              >
+                {u.active ? "Ativo" : "Inativo"}
+              </span>
+            </div>
+            {u.phone && <p className="text-sm text-gray-500">Tel: {u.phone}</p>}
+            <div className="flex gap-2 pt-1">
+              <Button size="sm" variant="secondary" onClick={() => setEditingUser(u)}>
+                <Edit2 className="h-3.5 w-3.5" /> Editar
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => handleDelete(u.uid)}>
+                <Trash2 className="h-3.5 w-3.5 text-red-500" /> Remover
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Create Modal */}
-      <Modal open={createModal} onClose={() => setCreateModal(false)} title="Novo Usuário">
+      <Modal open={createModal} onClose={() => setCreateModal(false)} title={buttonLabel}>
         <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
           <Input
             label="Nome"
@@ -151,14 +195,9 @@ export function UsersPage() {
             {...register("password")}
             error={errors.password?.message}
           />
-          <Select
-            label="Role"
-            options={roleOptions}
-            {...register("role")}
-            error={errors.role?.message}
-          />
-          <Input label="Telefone" {...register("phone")} />
-          <Input label="Chave PIX" {...register("pixKey")} />
+          {/* Role is set automatically, no select needed */}
+          <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
+          <Input label="Chave PIX" placeholder="CPF, email, telefone ou chave aleatória" {...register("pixKey")} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCreateModal(false)}>
               Cancelar
@@ -174,7 +213,7 @@ export function UsersPage() {
       <Modal
         open={!!editingUser}
         onClose={() => setEditingUser(null)}
-        title="Editar Usuário"
+        title={`Editar ${targetRole === UserRole.COMPRADOR ? "Comprador" : "Vendedor"}`}
       >
         {editingUser && (
           <EditUserForm
@@ -203,7 +242,6 @@ function EditUserForm({
   const { register, handleSubmit } = useForm<UpdateUserRequest>({
     defaultValues: {
       displayName: user.displayName,
-      role: user.role,
       phone: user.phone,
       pixKey: user.pixKey,
       active: user.active,
@@ -213,17 +251,8 @@ function EditUserForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Input label="Nome" {...register("displayName")} />
-      <Select
-        label="Role"
-        options={[
-          { value: "ADMIN", label: "Administrador" },
-          { value: "VENDEDOR", label: "Vendedor" },
-          { value: "COMPRADOR", label: "Comprador" },
-        ]}
-        {...register("role")}
-      />
-      <Input label="Telefone" {...register("phone")} />
-      <Input label="Chave PIX" {...register("pixKey")} />
+      <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
+      <Input label="Chave PIX" placeholder="CPF, email, telefone ou chave aleatória" {...register("pixKey")} />
       <div className="flex items-center gap-2">
         <input type="checkbox" id="active" {...register("active")} className="rounded" />
         <label htmlFor="active" className="text-sm text-gray-700">

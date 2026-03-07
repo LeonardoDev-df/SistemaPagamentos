@@ -40,8 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const res = await api.post("/api/auth/verify");
           setUser(res.data.data);
-        } catch (err) {
-          console.error("Erro ao verificar usuário no backend:", err);
+        } catch (err: unknown) {
+          const status = (err as { response?: { status?: number } }).response?.status;
+          if (status === 403) {
+            const { default: toast } = await import("react-hot-toast");
+            toast.error("Usuário não cadastrado no sistema. Solicite acesso ao administrador.");
+            await firebaseSignOut(auth);
+          } else {
+            console.error("Erro ao verificar usuário no backend:", err);
+          }
           setUser(null);
         }
       } else {

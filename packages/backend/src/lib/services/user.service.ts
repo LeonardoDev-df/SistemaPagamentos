@@ -38,6 +38,54 @@ export class UserService {
     return user;
   }
 
+  static async findByUid(uid: string): Promise<User | null> {
+    const doc = await adminDb.collection(USERS_COLLECTION).doc(uid).get();
+    return doc.exists ? (doc.data() as User) : null;
+  }
+
+  static async findByEmail(email: string): Promise<User | null> {
+    const snapshot = await adminDb
+      .collection(USERS_COLLECTION)
+      .where("email", "==", email.toLowerCase())
+      .limit(1)
+      .get();
+    return snapshot.empty ? null : (snapshot.docs[0].data() as User);
+  }
+
+  static async migrateUid(oldUid: string, newUid: string): Promise<User> {
+    const oldDoc = await adminDb.collection(USERS_COLLECTION).doc(oldUid).get();
+    if (!oldDoc.exists) throw new ApiError(404, "Usuário não encontrado");
+
+    const data = { ...oldDoc.data()!, uid: newUid } as User;
+    await adminDb.collection(USERS_COLLECTION).doc(newUid).set(data);
+    await adminDb.collection(USERS_COLLECTION).doc(oldUid).delete();
+
+    try {
+      await adminAuth.setCustomUserClaims(newUid, { role: data.role });
+    } catch {
+      // claims will be set on next verify if this fails
+    }
+
+    return data;
+  }
+
+  static async createAdmin(uid: string, email: string, displayName: string): Promise<User> {
+    const now = new Date().toISOString();
+    const user: User = {
+      uid,
+      email,
+      displayName,
+      role: UserRole.ADMIN,
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await adminAuth.setCustomUserClaims(uid, { role: UserRole.ADMIN });
+    await adminDb.collection(USERS_COLLECTION).doc(uid).set(user);
+    return user;
+  }
+
   static async getById(uid: string): Promise<User> {
     const doc = await adminDb.collection(USERS_COLLECTION).doc(uid).get();
     if (!doc.exists) {
@@ -85,31 +133,5 @@ export class UserService {
   static async delete(uid: string): Promise<void> {
     await adminAuth.deleteUser(uid);
     await adminDb.collection(USERS_COLLECTION).doc(uid).delete();
-  }
-
-  static async findOrCreateFromGoogle(
-    uid: string,
-    email: string,
-    displayName: string
-  ): Promise<User> {
-    const doc = await adminDb.collection(USERS_COLLECTION).doc(uid).get();
-    if (doc.exists) {
-      return doc.data() as User;
-    }
-
-    const now = new Date().toISOString();
-    const user: User = {
-      uid,
-      email,
-      displayName,
-      role: UserRole.COMPRADOR,
-      active: true,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    await adminAuth.setCustomUserClaims(uid, { role: UserRole.COMPRADOR });
-    await adminDb.collection(USERS_COLLECTION).doc(uid).set(user);
-    return user;
   }
 }

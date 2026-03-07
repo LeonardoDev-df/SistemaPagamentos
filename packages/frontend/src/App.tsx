@@ -29,17 +29,18 @@ export default function App() {
         <Route
           path="/transacoes/nova"
           element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.VENDEDOR]}>
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.COMPRADOR]}>
               <NewTransactionPage />
             </ProtectedRoute>
           }
         />
         <Route path="/transacoes/:id" element={<TransactionDetailPage />} />
 
+        {/* Admin manages Compradores, Comprador manages Vendedores */}
         <Route
           path="/usuarios"
           element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.COMPRADOR]}>
               <UsersPage />
             </ProtectedRoute>
           }

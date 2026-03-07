@@ -18,7 +18,7 @@ import { ROUTES } from "@/config/routes";
 export function NewTransactionPage() {
   const navigate = useNavigate();
   const createTransaction = useCreateTransaction();
-  const { data: users } = useUsers(UserRole.COMPRADOR);
+  const { data: users } = useUsers(UserRole.VENDEDOR);
   const { data: settings } = useSettings();
 
   const {
@@ -44,7 +44,7 @@ export function NewTransactionPage() {
     navigate(ROUTES.TRANSACTIONS);
   };
 
-  const compradorOptions = (users ?? []).map((u) => ({
+  const vendedorOptions = (users ?? []).map((u) => ({
     value: u.uid,
     label: u.displayName,
   }));
@@ -67,8 +67,8 @@ export function NewTransactionPage() {
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
-            label="Comprador"
-            options={compradorOptions}
+            label="Vendedor"
+            options={vendedorOptions}
             error={errors.compradorId?.message}
             {...register("compradorId")}
           />

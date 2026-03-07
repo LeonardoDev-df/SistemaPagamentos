@@ -12,7 +12,7 @@ import { apiResponse, apiError } from "@/lib/utils/response";
 export async function POST(req: NextRequest) {
   try {
     const user = await authenticateRequest(req);
-    requireRole(UserRole.ADMIN, UserRole.VENDEDOR)(user);
+    requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
 
     const body = await req.json();
     const validated = validateBody(createTransactionSchema, body);
@@ -31,11 +31,11 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const filters = {
       status: searchParams.get("status") as TransactionStatus | undefined,
-      vendedorId: searchParams.get("vendedorId") ?? undefined,
-      compradorId:
-        user.role === UserRole.COMPRADOR
+      vendedorId:
+        user.role === UserRole.VENDEDOR
           ? user.uid
-          : searchParams.get("compradorId") ?? undefined,
+          : searchParams.get("vendedorId") ?? undefined,
+      compradorId: searchParams.get("compradorId") ?? undefined,
       cardType: searchParams.get("cardType") as "VR" | "VA" | undefined,
       dateFrom: searchParams.get("dateFrom") ?? undefined,
       dateTo: searchParams.get("dateTo") ?? undefined,
