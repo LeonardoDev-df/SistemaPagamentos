@@ -13,7 +13,19 @@ export function apiError(error: unknown, defaultStatus = 500): NextResponse<ApiR
     );
   }
 
+  // Handle Firebase Auth errors as 400
+  const errAny = error as Record<string, unknown>;
+  const code = String(errAny?.code ?? "");
+  if (code.startsWith("auth/")) {
+    const message = error instanceof Error ? error.message : "Erro de autenticação";
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 400 }
+    );
+  }
+
   const message = error instanceof Error ? error.message : "Erro interno do servidor";
+  console.error("[apiError]", error);
   return NextResponse.json(
     { success: false, error: message },
     { status: defaultStatus }

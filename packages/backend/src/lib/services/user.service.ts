@@ -30,10 +30,12 @@ export class UserService {
       });
       uid = authUser.uid;
     } catch (err: unknown) {
-      const code = (err as { code?: string }).code;
-      if (code === "auth/email-already-exists") {
+      const errAny = err as Record<string, unknown>;
+      const code = errAny.code ?? (errAny.errorInfo as Record<string, unknown>)?.code ?? "";
+      const msg = String(errAny.message ?? "");
+
+      if (code === "auth/email-already-exists" || msg.includes("already in use")) {
         // Email already in Firebase Auth (e.g., from Google sign-in)
-        // Get existing auth user and update their password
         const existingAuth = await adminAuth.getUserByEmail(email);
         await adminAuth.updateUser(existingAuth.uid, { password, displayName });
         uid = existingAuth.uid;
