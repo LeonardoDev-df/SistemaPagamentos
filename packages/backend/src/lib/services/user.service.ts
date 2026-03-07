@@ -13,17 +13,40 @@ export class UserService {
   static async create(data: CreateUserRequest): Promise<User> {
     const { email, password, displayName, role, phone, pixKey } = data;
 
-    const authUser = await adminAuth.createUser({
-      email,
-      password,
-      displayName,
-    });
+    // Check if email already exists in Firestore
+    const existing = await this.findByEmail(email);
+    if (existing) {
+      throw new ApiError(400, "Já existe um usuário com este email.");
+    }
 
-    await adminAuth.setCustomUserClaims(authUser.uid, { role });
+    let uid: string;
+
+    try {
+      // Try to create Firebase Auth user
+      const authUser = await adminAuth.createUser({
+        email,
+        password,
+        displayName,
+      });
+      uid = authUser.uid;
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/email-already-exists") {
+        // Email already in Firebase Auth (e.g., from Google sign-in)
+        // Get existing auth user and update their password
+        const existingAuth = await adminAuth.getUserByEmail(email);
+        await adminAuth.updateUser(existingAuth.uid, { password, displayName });
+        uid = existingAuth.uid;
+      } else {
+        throw err;
+      }
+    }
+
+    await adminAuth.setCustomUserClaims(uid, { role });
 
     const now = new Date().toISOString();
     const user: User = {
-      uid: authUser.uid,
+      uid,
       email,
       displayName,
       role,
@@ -34,7 +57,7 @@ export class UserService {
       updatedAt: now,
     };
 
-    await adminDb.collection(USERS_COLLECTION).doc(authUser.uid).set(user);
+    await adminDb.collection(USERS_COLLECTION).doc(uid).set(user);
     return user;
   }
 

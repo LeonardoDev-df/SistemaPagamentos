@@ -35,19 +35,20 @@ export async function POST(req: NextRequest) {
     requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
 
     const body = await req.json();
-    const validated = validateBody(createUserSchema, body);
 
-    // Enforce hierarchy: Admin creates Compradores, Comprador creates Vendedores
-    if (user.role === UserRole.ADMIN && validated.role !== UserRole.COMPRADOR) {
-      throw new ApiError(400, "Administrador só pode cadastrar Compradores.");
+    // Auto-set role based on who is creating
+    if (user.role === UserRole.ADMIN) {
+      body.role = UserRole.COMPRADOR;
+    } else if (user.role === UserRole.COMPRADOR) {
+      body.role = UserRole.VENDEDOR;
     }
-    if (user.role === UserRole.COMPRADOR && validated.role !== UserRole.VENDEDOR) {
-      throw new ApiError(400, "Comprador só pode cadastrar Vendedores.");
-    }
+
+    const validated = validateBody(createUserSchema, body);
 
     const newUser = await UserService.create(validated);
     return apiResponse(newUser, 201);
   } catch (error) {
+    console.error("[users POST] Error:", error);
     return apiError(error);
   }
 }
