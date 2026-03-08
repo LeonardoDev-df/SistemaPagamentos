@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: "primary" | "secondary" | "danger" | "ghost" | "accent";
   size?: "sm" | "md" | "lg";
   loading?: boolean;
 }
@@ -10,6 +10,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variants = {
   primary:
     "bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm shadow-primary-600/20",
+  accent:
+    "bg-accent-500 text-primary-900 hover:bg-accent-600 focus:ring-accent-400 shadow-sm shadow-accent-500/20 font-semibold",
   secondary:
     "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-400 shadow-sm",
   danger:

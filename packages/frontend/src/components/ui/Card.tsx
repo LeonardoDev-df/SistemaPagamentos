@@ -34,7 +34,7 @@ export function Card({ title, value, subtitle, icon, trend, className = "", chil
           )}
         </div>
         {icon && (
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600 shrink-0">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-50 text-accent-600 shrink-0">
             {icon}
           </div>
         )}

@@ -20,11 +20,14 @@ export function ProfilePage() {
 
   const { register, handleSubmit } = useForm<UpdateUserRequest>({
     values: user
-      ? { displayName: user.displayName, phone: user.phone, pixKey: user.pixKey }
+      ? { displayName: user.displayName, phone: user.phone, pixKey: user.pixKey, cpf: user.cpf, address: user.address }
       : undefined,
   });
 
   const onSubmit = async (data: UpdateUserRequest) => {
+    if (data.address && Object.values(data.address).every((v) => !v?.trim())) {
+      data.address = undefined;
+    }
     try {
       setSaving(true);
       await api.put("/api/auth/profile", data);
@@ -39,7 +42,7 @@ export function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
           <UserCircle className="h-5 w-5" />
         </div>
         <div>
@@ -71,6 +74,21 @@ export function ProfilePage() {
         <Input label="Nome" {...register("displayName")} />
         <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
         <Input label="Chave PIX" placeholder="CPF, email, telefone ou chave aleatória" {...register("pixKey")} />
+        <Input label="CPF" placeholder="000.000.000-00" {...register("cpf")} />
+
+        <div className="border-t border-gray-100 pt-4 mt-2">
+          <p className="text-sm font-medium text-gray-700 mb-3">Endereço</p>
+          <div className="space-y-3">
+            <Input label="Rua" placeholder="Ex: Rua das Flores, 123" {...register("address.rua")} />
+            <Input label="Bairro" placeholder="Ex: Centro" {...register("address.bairro")} />
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="Cidade" placeholder="Ex: São Paulo" {...register("address.cidade")} />
+              <Input label="Estado" placeholder="SP" maxLength={2} {...register("address.estado")} />
+            </div>
+            <Input label="CEP" placeholder="00000-000" {...register("address.cep")} />
+          </div>
+        </div>
+
         <div className="flex justify-end pt-2">
           <Button type="submit" loading={saving}>Salvar</Button>
         </div>

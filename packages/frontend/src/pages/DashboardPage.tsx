@@ -74,7 +74,7 @@ export function DashboardPage() {
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                          className="h-full bg-accent-500 rounded-full transition-all duration-500"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
@@ -93,7 +93,7 @@ export function DashboardPage() {
               <h2 className="text-base font-bold text-gray-900">Transações Recentes</h2>
               <button
                 onClick={() => navigate(ROUTES.TRANSACTIONS)}
-                className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                className="text-xs font-medium text-accent-600 hover:text-accent-700 flex items-center gap-1"
               >
                 Ver todas <ArrowRight className="h-3 w-3" />
               </button>

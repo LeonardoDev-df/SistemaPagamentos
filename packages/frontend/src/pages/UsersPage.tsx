@@ -46,6 +46,9 @@ export function UsersPage() {
 
   const onCreateSubmit = async (data: CreateUserRequest) => {
     data.role = targetRole;
+    if (data.address && Object.values(data.address).every((v) => !v?.trim())) {
+      data.address = undefined;
+    }
     await createUser.mutateAsync(data);
     setCreateModal(false);
     reset({ role: targetRole });
@@ -53,6 +56,9 @@ export function UsersPage() {
 
   const handleUpdate = async (data: UpdateUserRequest) => {
     if (!editingUser) return;
+    if (data.address && Object.values(data.address).every((v) => !v?.trim())) {
+      data.address = undefined;
+    }
     await updateUser.mutateAsync({ uid: editingUser.uid, data });
     setEditingUser(null);
   };
@@ -73,7 +79,7 @@ export function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
             <CreditCard className="h-5 w-5" />
           </div>
           <div>
@@ -126,7 +132,7 @@ export function UsersPage() {
                   <div className="flex items-center gap-3">
                     <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
                       u.active
-                        ? "bg-primary-100 text-primary-700"
+                        ? "bg-accent-100 text-accent-700"
                         : "bg-gray-100 text-gray-400"
                     }`}>
                       {u.displayName.charAt(0).toUpperCase()}
@@ -154,7 +160,7 @@ export function UsersPage() {
                     {!isAdmin && (
                       <button
                         onClick={() => navigate(`/usuarios/${u.uid}`)}
-                        className="p-2 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors"
+                        className="p-2 rounded-lg hover:bg-accent-50 text-accent-600 transition-colors"
                         title="Ver cartões"
                       >
                         <Eye className="h-4 w-4" />
@@ -206,7 +212,7 @@ export function UsersPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                  u.active ? "bg-primary-100 text-primary-700" : "bg-gray-100 text-gray-400"
+                  u.active ? "bg-accent-100 text-accent-700" : "bg-gray-100 text-gray-400"
                 }`}>
                   {u.displayName.charAt(0).toUpperCase()}
                 </div>
@@ -253,6 +259,21 @@ export function UsersPage() {
           <Input label="Senha" type="password" {...register("password")} error={errors.password?.message} />
           <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
           <Input label="Chave PIX" placeholder="CPF, email, telefone ou chave aleatória" {...register("pixKey")} />
+          <Input label="CPF" placeholder="000.000.000-00" {...register("cpf")} />
+
+          <div className="border-t border-gray-100 pt-4 mt-2">
+            <p className="text-sm font-medium text-gray-700 mb-3">Endereço (opcional)</p>
+            <div className="space-y-3">
+              <Input label="Rua" placeholder="Ex: Rua das Flores, 123" {...register("address.rua")} />
+              <Input label="Bairro" placeholder="Ex: Centro" {...register("address.bairro")} />
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Cidade" placeholder="Ex: São Paulo" {...register("address.cidade")} />
+                <Input label="Estado" placeholder="SP" maxLength={2} {...register("address.estado")} />
+              </div>
+              <Input label="CEP" placeholder="00000-000" {...register("address.cep")} />
+            </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCreateModal(false)}>Cancelar</Button>
             <Button type="submit" loading={createUser.isPending}>Criar</Button>
@@ -291,6 +312,8 @@ function EditUserForm({
       displayName: user.displayName,
       phone: user.phone,
       pixKey: user.pixKey,
+      cpf: user.cpf,
+      address: user.address,
     },
   });
 
@@ -299,6 +322,21 @@ function EditUserForm({
       <Input label="Nome" {...register("displayName")} />
       <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
       <Input label="Chave PIX" placeholder="CPF, email, telefone ou chave aleatória" {...register("pixKey")} />
+      <Input label="CPF" placeholder="000.000.000-00" {...register("cpf")} />
+
+      <div className="border-t border-gray-100 pt-4 mt-2">
+        <p className="text-sm font-medium text-gray-700 mb-3">Endereço</p>
+        <div className="space-y-3">
+          <Input label="Rua" placeholder="Ex: Rua das Flores, 123" {...register("address.rua")} />
+          <Input label="Bairro" placeholder="Ex: Centro" {...register("address.bairro")} />
+          <div className="grid grid-cols-2 gap-3">
+            <Input label="Cidade" placeholder="Ex: São Paulo" {...register("address.cidade")} />
+            <Input label="Estado" placeholder="SP" maxLength={2} {...register("address.estado")} />
+          </div>
+          <Input label="CEP" placeholder="00000-000" {...register("address.cep")} />
+        </div>
+      </div>
+
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="secondary" type="button" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" loading={loading}>Salvar</Button>

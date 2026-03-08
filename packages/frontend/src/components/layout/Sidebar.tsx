@@ -21,7 +21,7 @@ interface SidebarProps {
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
     isActive
-      ? "bg-primary-600 text-white shadow-md shadow-primary-600/30"
+      ? "bg-accent-500/15 text-accent-400 shadow-md shadow-accent-500/10 border border-accent-500/20"
       : "text-gray-400 hover:bg-white/5 hover:text-white"
   }`;
 
@@ -39,15 +39,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-gray-900 flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed inset-y-0 left-0 z-50 w-[260px] bg-primary-900 flex flex-col transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-600/30">
-              <CreditCard className="h-5 w-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-500 shadow-lg shadow-accent-500/30">
+              <CreditCard className="h-5 w-5 text-primary-900" />
             </div>
             <div>
               <span className="font-bold text-white text-lg">SisPag</span>
@@ -65,7 +65,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         {/* User card */}
         <div className="mx-4 mt-4 p-3 rounded-xl bg-white/5 border border-white/10">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400 font-semibold text-sm shrink-0">
+            <div className="h-10 w-10 rounded-full bg-accent-500/20 flex items-center justify-center text-accent-400 font-semibold text-sm shrink-0">
               {user?.displayName?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="min-w-0">

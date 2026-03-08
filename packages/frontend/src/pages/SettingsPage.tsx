@@ -25,7 +25,7 @@ export function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
           <SettingsIcon className="h-5 w-5" />
         </div>
         <div>

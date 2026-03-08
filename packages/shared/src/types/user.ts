@@ -1,5 +1,13 @@
 import { UserRole } from "../enums/roles";
 
+export interface Address {
+  rua: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+}
+
 export interface User {
   uid: string;
   email: string;
@@ -7,6 +15,8 @@ export interface User {
   role: UserRole;
   phone?: string;
   pixKey?: string;
+  cpf?: string;
+  address?: Address;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -19,6 +29,8 @@ export interface CreateUserRequest {
   role: UserRole;
   phone?: string;
   pixKey?: string;
+  cpf?: string;
+  address?: Address;
 }
 
 export interface UpdateUserRequest {
@@ -26,5 +38,7 @@ export interface UpdateUserRequest {
   role?: UserRole;
   phone?: string;
   pixKey?: string;
+  cpf?: string;
+  address?: Address;
   active?: boolean;
 }

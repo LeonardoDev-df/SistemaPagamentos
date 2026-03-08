@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="80" fill="#0a1929"/>
+  <rect x="48" y="48" width="416" height="416" rx="60" fill="none" stroke="#d4a017" stroke-width="8" opacity="0.3"/>
+  <text x="256" y="310" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="240" fill="#d4a017">$</text>
+  <text x="256" y="420" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="56" fill="#9fb3c8">SisPag</text>
+</svg>

@@ -78,7 +78,7 @@ export function LoginPage() {
       <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-white mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-accent-500 border border-accent-400/30 text-primary-900 mb-4 shadow-lg shadow-accent-500/30">
             <CreditCard className="h-8 w-8" />
           </div>
           <h1 className="text-3xl font-bold text-white">SisPag</h1>

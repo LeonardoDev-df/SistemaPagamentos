@@ -11,7 +11,7 @@ const USERS_COLLECTION = "users";
 
 export class UserService {
   static async create(data: CreateUserRequest): Promise<User> {
-    const { email, password, displayName, role, phone, pixKey } = data;
+    const { email, password, displayName, role, phone, pixKey, cpf, address } = data;
 
     // Check if email already exists in Firestore
     const existing = await this.findByEmail(email);
@@ -54,6 +54,8 @@ export class UserService {
       role,
       phone,
       pixKey,
+      cpf,
+      address,
       active: true,
       createdAt: now,
       updatedAt: now,

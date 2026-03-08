@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, Plus, CreditCard, Trash2, Phone, Mail, Key } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, Phone, Mail, Key, FileText, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -77,6 +77,17 @@ export function VendedorDetailPage() {
               {vendedor.pixKey && (
                 <span className="flex items-center gap-1.5">
                   <Key className="h-3.5 w-3.5" /> {vendedor.pixKey}
+                </span>
+              )}
+              {vendedor.cpf && (
+                <span className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> CPF: {vendedor.cpf}
+                </span>
+              )}
+              {vendedor.address && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {[vendedor.address.rua, vendedor.address.bairro, vendedor.address.cidade, vendedor.address.estado, vendedor.address.cep].filter(Boolean).join(", ")}
                 </span>
               )}
             </div>

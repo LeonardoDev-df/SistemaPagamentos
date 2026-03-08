@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, Clock, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Upload, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -26,7 +26,6 @@ export function TransactionDetailPage() {
   const [statusModal, setStatusModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<TransactionStatus | null>(null);
   const [statusNote, setStatusNote] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (isLoading) return <Loading />;
@@ -88,28 +87,6 @@ export function TransactionDetailPage() {
             <InfoItem label="Data Pagamento" value={formatDateTime(transaction.paymentDate)} />
           )}
         </div>
-
-        {/* Card Password */}
-        {transaction.cardPassword && canEdit && (
-          <div className="border-t pt-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-500">Senha do Cartão:</span>
-              <span className="text-sm font-mono">
-                {showPassword ? transaction.cardPassword : "••••••••"}
-              </span>
-              <button
-                onClick={() => setShowPassword(!showPassword)}
-                className="p-1 rounded hover:bg-gray-100"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4 text-gray-400" />
-                ) : (
-                  <Eye className="h-4 w-4 text-gray-400" />
-                )}
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Receipt */}
         <div className="border-t pt-4">
