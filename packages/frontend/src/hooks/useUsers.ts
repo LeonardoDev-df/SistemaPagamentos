@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/user.service";
-import { CreateUserRequest, UpdateUserRequest, UserRole } from "@sistema-pagamentos/shared";
+import { CreateUserRequest, UpdateUserRequest } from "@sistema-pagamentos/shared";
 import toast from "react-hot-toast";
 
-export function useUsers(role?: UserRole) {
+export function useUsers() {
   return useQuery({
-    queryKey: ["users", role],
-    queryFn: () => userService.list(role),
+    queryKey: ["users"],
+    queryFn: () => userService.list(),
   });
 }
 

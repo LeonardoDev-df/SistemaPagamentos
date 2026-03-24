@@ -122,6 +122,25 @@ export class UserService {
     return snapshot.docs.map((doc) => doc.data() as User);
   }
 
+  /**
+   * List all non-admin users. More robust than filtering by role=COMPRADOR
+   * since it catches users that may have been created with different roles.
+   */
+  static async listCompradores(activeOnly?: boolean): Promise<User[]> {
+    const snapshot = await adminDb.collection(USERS_COLLECTION).get();
+    let users = snapshot.docs
+      .map((doc) => doc.data() as User)
+      .filter((u) => u.role !== UserRole.ADMIN);
+
+    if (activeOnly !== undefined) {
+      users = users.filter((u) => u.active === activeOnly);
+    }
+
+    return users.sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
   static async update(uid: string, data: UpdateUserRequest): Promise<User> {
     const current = await this.getById(uid);
 

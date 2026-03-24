@@ -3,14 +3,12 @@ import {
   User,
   CreateUserRequest,
   UpdateUserRequest,
-  UserRole,
   ApiResponse,
 } from "@sistema-pagamentos/shared";
 
 export const userService = {
-  async list(role?: UserRole) {
-    const params = role ? `?role=${role}` : "";
-    const res = await api.get<ApiResponse<User[]>>(`/api/users${params}`);
+  async list() {
+    const res = await api.get<ApiResponse<User[]>>("/api/users");
     return res.data.data!;
   },
 

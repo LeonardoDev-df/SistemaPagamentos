@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Edit2, Trash2, CreditCard, ToggleLeft, ToggleRight, Eye, Search, AlertTriangle, Bell } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -20,9 +19,33 @@ import {
   User,
   Vendedor,
   Card,
-  createUserSchema,
-  createVendedorSchema,
 } from "@sistema-pagamentos/shared";
+
+// Mask helpers
+function maskPhone(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d;
+  if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+}
+
+function maskCPF(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function maskCEP(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 8);
+  if (d.length <= 5) return d;
+  return `${d.slice(0, 5)}-${d.slice(5)}`;
+}
+
+function onlyLetters(v: string) {
+  return v.replace(/[^a-zA-ZÀ-ÿ\s]/g, "");
+}
 
 export function UsersPage() {
   const { user: currentUser } = useAuth();
@@ -36,7 +59,7 @@ export function UsersPage() {
 
 // ============ ADMIN VIEW: Manage Compradores ============
 function AdminCompradoresView() {
-  const { data: users, isLoading } = useUsers(UserRole.COMPRADOR);
+  const { data: users, isLoading } = useUsers();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
@@ -46,13 +69,7 @@ function AdminCompradoresView() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [search, setSearch] = useState("");
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateUserRequest>({
-    resolver: zodResolver(createUserSchema),
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CreateUserRequest>({
     defaultValues: { role: UserRole.COMPRADOR },
   });
 
@@ -112,19 +129,11 @@ function AdminCompradoresView() {
       <div className="flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nome ou email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none"
-          />
+          <input type="text" placeholder="Buscar por nome ou email..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none" />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as any)}
-          className="text-sm border border-gray-300 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none"
-        >
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}
+          className="text-sm border border-gray-300 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none">
           <option value="all">Todos ({(users ?? []).length})</option>
           <option value="active">Ativos ({(users ?? []).filter(u => u.active).length})</option>
           <option value="inactive">Inativos ({(users ?? []).filter(u => !u.active).length})</option>
@@ -207,15 +216,24 @@ function AdminCompradoresView() {
         ))}
       </div>
 
-      {/* Create Modal - only name, email, phone */}
+      {/* Create Comprador Modal - ONLY name, email, phone */}
       <Modal open={createModal} onClose={() => setCreateModal(false)} title="Novo Comprador">
         <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
-          <Input label="Nome *" {...register("displayName")} error={errors.displayName?.message} />
-          <Input label="Email Gmail *" type="email" placeholder="email@gmail.com" {...register("email")} error={errors.email?.message} />
+          <Input label="Nome *" {...register("displayName", { required: "Nome é obrigatório" })} error={errors.displayName?.message} />
+          <Input label="Email Gmail *" type="email" placeholder="email@gmail.com" {...register("email", { required: "Email é obrigatório" })} error={errors.email?.message} />
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
             <p className="text-xs text-blue-700">O comprador usará este Gmail para entrar no sistema via Google.</p>
           </div>
-          <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
+          <Input
+            label="Telefone"
+            placeholder="(00) 00000-0000"
+            {...register("phone")}
+            onChange={(e) => {
+              const masked = maskPhone(e.target.value);
+              e.target.value = masked;
+              setValue("phone", masked);
+            }}
+          />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCreateModal(false)}>Cancelar</Button>
             <Button type="submit" loading={createUser.isPending}>Criar</Button>
@@ -223,7 +241,7 @@ function AdminCompradoresView() {
         </form>
       </Modal>
 
-      {/* Edit Modal */}
+      {/* Edit Comprador Modal */}
       <Modal open={!!editingUser} onClose={() => setEditingUser(null)} title="Editar Comprador">
         {editingUser && (
           <EditUserForm user={editingUser} onSubmit={handleUpdate} onCancel={() => setEditingUser(null)} loading={updateUser.isPending} />
@@ -233,7 +251,7 @@ function AdminCompradoresView() {
   );
 }
 
-// ============ COMPRADOR VIEW: Manage Vendedores with notifications ============
+// ============ COMPRADOR VIEW: Manage Vendedores ============
 function CompradorVendedoresView() {
   const navigate = useNavigate();
   const { data: vendedores, isLoading } = useVendedores();
@@ -247,34 +265,26 @@ function CompradorVendedoresView() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [search, setSearch] = useState("");
 
-  // Calculate due date notifications
   const vencimentos = useMemo(() => {
     if (!allCards) return [];
     const today = new Date();
     const dia = today.getDate();
     const alerts: { card: Card; vendedorName: string; diasRestantes: number }[] = [];
-
     for (const card of allCards) {
       if (!card.active || !card.diaVencimento) continue;
       const vendedor = (vendedores ?? []).find(v => v.id === card.vendedorId);
       if (!vendedor) continue;
-
-      let diaVenc = card.diaVencimento;
       let diasRestantes: number;
-
-      if (diaVenc >= dia) {
-        diasRestantes = diaVenc - dia;
+      if (card.diaVencimento >= dia) {
+        diasRestantes = card.diaVencimento - dia;
       } else {
-        // Next month
         const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-        diasRestantes = (daysInMonth - dia) + diaVenc;
+        diasRestantes = (daysInMonth - dia) + card.diaVencimento;
       }
-
       if (diasRestantes <= 5) {
         alerts.push({ card, vendedorName: vendedor.nome, diasRestantes });
       }
     }
-
     return alerts.sort((a, b) => a.diasRestantes - b.diasRestantes);
   }, [allCards, vendedores]);
 
@@ -284,23 +294,12 @@ function CompradorVendedoresView() {
     if (statusFilter === "inactive") list = list.filter(v => !v.active);
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(v =>
-        v.nome.toLowerCase().includes(q) ||
-        (v.empresa ?? "").toLowerCase().includes(q) ||
-        (v.funcao ?? "").toLowerCase().includes(q)
-      );
+      list = list.filter(v => v.nome.toLowerCase().includes(q) || (v.empresa ?? "").toLowerCase().includes(q) || (v.funcao ?? "").toLowerCase().includes(q));
     }
     return list;
   }, [vendedores, statusFilter, search]);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateVendedorRequest>({
-    resolver: zodResolver(createVendedorSchema),
-  });
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CreateVendedorRequest>();
 
   const onCreateSubmit = async (data: CreateVendedorRequest) => {
     if (data.address && Object.values(data.address).every((v) => !v?.trim())) {
@@ -352,8 +351,7 @@ function CompradorVendedoresView() {
       {vencimentos.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
           <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
-            <Bell className="h-4 w-4" />
-            Vencimentos Próximos
+            <Bell className="h-4 w-4" /> Vencimentos Próximos
           </div>
           <div className="space-y-1.5">
             {vencimentos.map((v, i) => (
@@ -361,19 +359,11 @@ function CompradorVendedoresView() {
                 <div className="flex items-center gap-2">
                   <AlertTriangle className={`h-3.5 w-3.5 ${v.diasRestantes === 0 ? "text-red-500" : "text-amber-500"}`} />
                   <span className="text-gray-700">
-                    <span className="font-medium">{v.vendedorName}</span>
-                    {" — "}
-                    {v.card.cardBrand} {v.card.cardType}
+                    <span className="font-medium">{v.vendedorName}</span> — {v.card.cardBrand} {v.card.cardType}
                     {v.card.valorMensal ? ` (R$ ${v.card.valorMensal.toFixed(2)})` : ""}
                   </span>
                 </div>
-                <span className={`font-semibold text-xs px-2 py-0.5 rounded-full ${
-                  v.diasRestantes === 0
-                    ? "bg-red-100 text-red-700"
-                    : v.diasRestantes <= 2
-                    ? "bg-orange-100 text-orange-700"
-                    : "bg-amber-100 text-amber-700"
-                }`}>
+                <span className={`font-semibold text-xs px-2 py-0.5 rounded-full ${v.diasRestantes === 0 ? "bg-red-100 text-red-700" : v.diasRestantes <= 2 ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700"}`}>
                   {v.diasRestantes === 0 ? "Vence hoje!" : `${v.diasRestantes} dia${v.diasRestantes > 1 ? "s" : ""}`}
                 </span>
               </div>
@@ -386,19 +376,11 @@ function CompradorVendedoresView() {
       <div className="flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nome, empresa, função..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none"
-          />
+          <input type="text" placeholder="Buscar por nome, empresa, função..." value={search} onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none" />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as any)}
-          className="text-sm border border-gray-300 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none"
-        >
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}
+          className="text-sm border border-gray-300 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none">
           <option value="all">Todos ({(vendedores ?? []).length})</option>
           <option value="active">Ativos ({(vendedores ?? []).filter(v => v.active).length})</option>
           <option value="inactive">Inativos ({(vendedores ?? []).filter(v => !v.active).length})</option>
@@ -479,15 +461,9 @@ function CompradorVendedoresView() {
             {v.phone && <p className="text-sm text-gray-500">Tel: {v.phone}</p>}
             {v.pixKey && <p className="text-sm text-gray-500">PIX: {v.pixKey}</p>}
             <div className="flex gap-2 pt-1 border-t border-gray-100">
-              <Button size="sm" variant="secondary" onClick={() => navigate(`/vendedores/${v.id}`)}>
-                <CreditCard className="h-3.5 w-3.5" /> Cartões
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setEditingVendedor(v)}>
-                <Edit2 className="h-3.5 w-3.5" /> Editar
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => handleDelete(v.id)}>
-                <Trash2 className="h-3.5 w-3.5 text-red-500" /> Remover
-              </Button>
+              <Button size="sm" variant="secondary" onClick={() => navigate(`/vendedores/${v.id}`)}><CreditCard className="h-3.5 w-3.5" /> Cartões</Button>
+              <Button size="sm" variant="secondary" onClick={() => setEditingVendedor(v)}><Edit2 className="h-3.5 w-3.5" /> Editar</Button>
+              <Button size="sm" variant="secondary" onClick={() => handleDelete(v.id)}><Trash2 className="h-3.5 w-3.5 text-red-500" /> Remover</Button>
             </div>
           </div>
         ))}
@@ -496,12 +472,14 @@ function CompradorVendedoresView() {
       {/* Create Vendedor Modal */}
       <Modal open={createModal} onClose={() => setCreateModal(false)} title="Novo Vendedor">
         <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
-          <Input label="Nome *" {...register("nome")} error={errors.nome?.message} />
+          <Input label="Nome *" {...register("nome", { required: "Nome é obrigatório" })} error={errors.nome?.message} />
           <Input label="Função" placeholder="Ex: Motorista, Cozinheiro..." {...register("funcao")} />
           <Input label="Empresa" placeholder="Ex: Empresa XYZ" {...register("empresa")} />
-          <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
+          <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")}
+            onChange={(e) => { const m = maskPhone(e.target.value); e.target.value = m; setValue("phone", m); }} />
           <Input label="Chave PIX" placeholder="CPF, email, telefone ou chave aleatória" {...register("pixKey")} />
-          <Input label="CPF" placeholder="000.000.000-00" {...register("cpf")} />
+          <Input label="CPF" placeholder="000.000.000-00" {...register("cpf")}
+            onChange={(e) => { const m = maskCPF(e.target.value); e.target.value = m; setValue("cpf", m); }} />
           <div className="border-t border-gray-100 pt-4 mt-2">
             <p className="text-sm font-medium text-gray-700 mb-3">Endereço (opcional)</p>
             <div className="space-y-3">
@@ -509,9 +487,11 @@ function CompradorVendedoresView() {
               <Input label="Bairro" {...register("address.bairro")} />
               <div className="grid grid-cols-2 gap-3">
                 <Input label="Cidade" {...register("address.cidade")} />
-                <Input label="Estado" placeholder="SP" maxLength={2} {...register("address.estado")} />
+                <Input label="Estado" placeholder="SP" maxLength={2} {...register("address.estado")}
+                  onChange={(e) => { const m = onlyLetters(e.target.value).toUpperCase().slice(0, 2); e.target.value = m; setValue("address.estado", m); }} />
               </div>
-              <Input label="CEP" placeholder="00000-000" {...register("address.cep")} />
+              <Input label="CEP" placeholder="00000-000" {...register("address.cep")}
+                onChange={(e) => { const m = maskCEP(e.target.value); e.target.value = m; setValue("address.cep", m); }} />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
@@ -533,14 +513,15 @@ function CompradorVendedoresView() {
 
 // ============ Edit Forms ============
 function EditUserForm({ user, onSubmit, onCancel, loading }: { user: User; onSubmit: (data: UpdateUserRequest) => void; onCancel: () => void; loading: boolean }) {
-  const { register, handleSubmit } = useForm<UpdateUserRequest>({
+  const { register, handleSubmit, setValue } = useForm<UpdateUserRequest>({
     defaultValues: { displayName: user.displayName, phone: user.phone },
   });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Input label="Nome" {...register("displayName")} />
-      <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
+      <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")}
+        onChange={(e) => { const m = maskPhone(e.target.value); e.target.value = m; setValue("phone", m); }} />
       <div className="flex justify-end gap-3 pt-2">
         <Button variant="secondary" type="button" onClick={onCancel}>Cancelar</Button>
         <Button type="submit" loading={loading}>Salvar</Button>
@@ -550,15 +531,10 @@ function EditUserForm({ user, onSubmit, onCancel, loading }: { user: User; onSub
 }
 
 function EditVendedorForm({ vendedor, onSubmit, onCancel, loading }: { vendedor: Vendedor; onSubmit: (data: UpdateVendedorRequest) => void; onCancel: () => void; loading: boolean }) {
-  const { register, handleSubmit } = useForm<UpdateVendedorRequest>({
+  const { register, handleSubmit, setValue } = useForm<UpdateVendedorRequest>({
     defaultValues: {
-      nome: vendedor.nome,
-      funcao: vendedor.funcao,
-      empresa: vendedor.empresa,
-      phone: vendedor.phone,
-      pixKey: vendedor.pixKey,
-      cpf: vendedor.cpf,
-      address: vendedor.address,
+      nome: vendedor.nome, funcao: vendedor.funcao, empresa: vendedor.empresa,
+      phone: vendedor.phone, pixKey: vendedor.pixKey, cpf: vendedor.cpf, address: vendedor.address,
     },
   });
 
@@ -567,9 +543,11 @@ function EditVendedorForm({ vendedor, onSubmit, onCancel, loading }: { vendedor:
       <Input label="Nome" {...register("nome")} />
       <Input label="Função" {...register("funcao")} />
       <Input label="Empresa" {...register("empresa")} />
-      <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
+      <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")}
+        onChange={(e) => { const m = maskPhone(e.target.value); e.target.value = m; setValue("phone", m); }} />
       <Input label="Chave PIX" {...register("pixKey")} />
-      <Input label="CPF" placeholder="000.000.000-00" {...register("cpf")} />
+      <Input label="CPF" placeholder="000.000.000-00" {...register("cpf")}
+        onChange={(e) => { const m = maskCPF(e.target.value); e.target.value = m; setValue("cpf", m); }} />
       <div className="border-t border-gray-100 pt-4 mt-2">
         <p className="text-sm font-medium text-gray-700 mb-3">Endereço</p>
         <div className="space-y-3">
@@ -577,9 +555,11 @@ function EditVendedorForm({ vendedor, onSubmit, onCancel, loading }: { vendedor:
           <Input label="Bairro" {...register("address.bairro")} />
           <div className="grid grid-cols-2 gap-3">
             <Input label="Cidade" {...register("address.cidade")} />
-            <Input label="Estado" placeholder="SP" maxLength={2} {...register("address.estado")} />
+            <Input label="Estado" placeholder="SP" maxLength={2} {...register("address.estado")}
+              onChange={(e) => { const m = onlyLetters(e.target.value).toUpperCase().slice(0, 2); e.target.value = m; setValue("address.estado", m); }} />
           </div>
-          <Input label="CEP" placeholder="00000-000" {...register("address.cep")} />
+          <Input label="CEP" placeholder="00000-000" {...register("address.cep")}
+            onChange={(e) => { const m = maskCEP(e.target.value); e.target.value = m; setValue("address.cep", m); }} />
         </div>
       </div>
       <div className="flex justify-end gap-3 pt-2">

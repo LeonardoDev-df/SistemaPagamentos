@@ -10,16 +10,16 @@ export async function GET(req: NextRequest) {
     const user = await authenticateRequest(req);
     requireRole(UserRole.ADMIN)(user);
 
-    let role = req.nextUrl.searchParams.get("role") as UserRole | null;
     const active = req.nextUrl.searchParams.get("active");
 
-    const users = await UserService.list({
-      role: role ?? undefined,
-      active: active !== null ? active === "true" : undefined,
-    });
+    // List all non-admin users (compradores)
+    const users = await UserService.listCompradores(
+      active !== null ? active === "true" : undefined
+    );
 
     return apiResponse(users);
   } catch (error) {
+    console.error("[users GET] Error:", error);
     return apiError(error);
   }
 }
