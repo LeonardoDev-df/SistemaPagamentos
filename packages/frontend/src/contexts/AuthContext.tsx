@@ -7,7 +7,6 @@ import {
 } from "react";
 import {
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPopup,
   signOut as firebaseSignOut,
   User as FirebaseUser,
@@ -20,7 +19,6 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   user: User | null;
   loading: boolean;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -42,9 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(res.data.data);
         } catch (err: unknown) {
           const status = (err as { response?: { status?: number } }).response?.status;
+          const errorMsg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
           if (status === 403) {
             const { default: toast } = await import("react-hot-toast");
-            toast.error("Usuário não cadastrado no sistema. Solicite acesso ao administrador.");
+            toast.error(errorMsg || "Seu email não está cadastrado no sistema. Solicite acesso ao administrador.");
             await firebaseSignOut(auth);
           } else {
             console.error("Erro ao verificar usuário no backend:", err);
@@ -61,10 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const signInWithEmail = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
   const signInWithGoogle = async () => {
     await signInWithPopup(auth, googleProvider);
   };
@@ -76,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ firebaseUser, user, loading, signInWithEmail, signInWithGoogle, signOut }}
+      value={{ firebaseUser, user, loading, signInWithGoogle, signOut }}
     >
       {children}
     </AuthContext.Provider>

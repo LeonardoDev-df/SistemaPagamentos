@@ -10,8 +10,13 @@ import { ApiError } from "../utils/response";
 const USERS_COLLECTION = "users";
 
 export class UserService {
+  /**
+   * Admin creates a Comprador by registering their Gmail email.
+   * No Firebase Auth user is created here - the user will authenticate
+   * via Google Sign-In, and their uid will be linked on first login.
+   */
   static async create(data: CreateUserRequest): Promise<User> {
-    const { email, password, displayName, role, phone, pixKey, cpf, address } = data;
+    const { email, displayName, role, phone, pixKey, cpf, address } = data;
 
     // Check if email already exists in Firestore
     const existing = await this.findByEmail(email);
@@ -19,37 +24,13 @@ export class UserService {
       throw new ApiError(400, "Já existe um usuário com este email.");
     }
 
-    let uid: string;
-
-    try {
-      // Try to create Firebase Auth user
-      const authUser = await adminAuth.createUser({
-        email,
-        password,
-        displayName,
-      });
-      uid = authUser.uid;
-    } catch (err: unknown) {
-      const errAny = err as Record<string, unknown>;
-      const code = errAny.code ?? (errAny.errorInfo as Record<string, unknown>)?.code ?? "";
-      const msg = String(errAny.message ?? "");
-
-      if (code === "auth/email-already-exists" || msg.includes("already in use")) {
-        // Email already in Firebase Auth (e.g., from Google sign-in)
-        const existingAuth = await adminAuth.getUserByEmail(email);
-        await adminAuth.updateUser(existingAuth.uid, { password, displayName });
-        uid = existingAuth.uid;
-      } else {
-        throw err;
-      }
-    }
-
-    await adminAuth.setCustomUserClaims(uid, { role });
+    // Use email as temporary doc ID (will be migrated to Firebase uid on first login)
+    const docId = email.toLowerCase().replace(/[^a-z0-9]/g, "_");
 
     const now = new Date().toISOString();
     const user: User = {
-      uid,
-      email,
+      uid: docId,
+      email: email.toLowerCase(),
       displayName,
       role,
       phone,
@@ -61,7 +42,7 @@ export class UserService {
       updatedAt: now,
     };
 
-    await adminDb.collection(USERS_COLLECTION).doc(uid).set(user);
+    await adminDb.collection(USERS_COLLECTION).doc(docId).set(user);
     return user;
   }
 
@@ -79,13 +60,18 @@ export class UserService {
     return snapshot.empty ? null : (snapshot.docs[0].data() as User);
   }
 
+  /**
+   * On first Google login, migrate the Firestore doc from temp ID to Firebase uid
+   */
   static async migrateUid(oldUid: string, newUid: string): Promise<User> {
     const oldDoc = await adminDb.collection(USERS_COLLECTION).doc(oldUid).get();
     if (!oldDoc.exists) throw new ApiError(404, "Usuário não encontrado");
 
     const data = { ...oldDoc.data()!, uid: newUid } as User;
     await adminDb.collection(USERS_COLLECTION).doc(newUid).set(data);
-    await adminDb.collection(USERS_COLLECTION).doc(oldUid).delete();
+    if (oldUid !== newUid) {
+      await adminDb.collection(USERS_COLLECTION).doc(oldUid).delete();
+    }
 
     try {
       await adminAuth.setCustomUserClaims(newUid, { role: data.role });
@@ -145,12 +131,16 @@ export class UserService {
       updatedAt: new Date().toISOString(),
     };
 
-    if (data.role && data.role !== current.role) {
-      await adminAuth.setCustomUserClaims(uid, { role: data.role });
-    }
-
-    if (data.displayName) {
-      await adminAuth.updateUser(uid, { displayName: data.displayName });
+    // If this user has a real Firebase Auth uid, update claims/display
+    try {
+      if (data.role && data.role !== current.role) {
+        await adminAuth.setCustomUserClaims(uid, { role: data.role });
+      }
+      if (data.displayName) {
+        await adminAuth.updateUser(uid, { displayName: data.displayName });
+      }
+    } catch {
+      // User may not exist in Firebase Auth yet (pre-login), that's OK
     }
 
     await adminDb.collection(USERS_COLLECTION).doc(uid).set(updated);
@@ -158,7 +148,11 @@ export class UserService {
   }
 
   static async delete(uid: string): Promise<void> {
-    await adminAuth.deleteUser(uid);
+    try {
+      await adminAuth.deleteUser(uid);
+    } catch {
+      // User may not exist in Firebase Auth (never logged in)
+    }
     await adminDb.collection(USERS_COLLECTION).doc(uid).delete();
   }
 }

@@ -206,8 +206,10 @@ function AdminCompradoresView() {
       <Modal open={createModal} onClose={() => setCreateModal(false)} title="Novo Comprador">
         <form onSubmit={handleSubmit(onCreateSubmit)} className="space-y-4">
           <Input label="Nome" {...register("displayName")} error={errors.displayName?.message} />
-          <Input label="Email" type="email" {...register("email")} error={errors.email?.message} />
-          <Input label="Senha" type="password" {...register("password")} error={errors.password?.message} />
+          <Input label="Email Gmail" type="email" placeholder="email@gmail.com" {...register("email")} error={errors.email?.message} />
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+            <p className="text-xs text-blue-700">O comprador usará este Gmail para entrar no sistema via Google.</p>
+          </div>
           <Input label="Telefone" placeholder="(00) 00000-0000" {...register("phone")} />
           <Input label="Chave PIX" {...register("pixKey")} />
           <Input label="CPF" placeholder="000.000.000-00" {...register("cpf")} />

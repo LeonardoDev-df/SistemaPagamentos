@@ -9,14 +9,18 @@ export async function POST(req: NextRequest) {
   try {
     const authUser = await authenticateRequest(req);
 
-    // 1. Try to find by uid
+    // 1. Already linked by uid (returning user)
     let user = await UserService.findByUid(authUser.uid);
     if (user) return apiResponse(user);
 
-    // 2. Try to find by email (handles Google login for email/password-created users)
+    // 2. Find by email - handles first Google login after admin registered the email
     user = await UserService.findByEmail(authUser.email);
     if (user) {
-      // Migrate Firestore doc to new uid
+      // Check if user is active
+      if (!user.active) {
+        throw new ApiError(403, "Sua conta foi desativada. Entre em contato com o administrador.");
+      }
+      // Migrate Firestore doc from temp ID to real Firebase uid
       user = await UserService.migrateUid(user.uid, authUser.uid);
       return apiResponse(user);
     }
@@ -31,8 +35,8 @@ export async function POST(req: NextRequest) {
       return apiResponse(user);
     }
 
-    // 4. Not registered
-    throw new ApiError(403, "Usuário não cadastrado no sistema. Solicite acesso ao administrador.");
+    // 4. Email not registered - block access
+    throw new ApiError(403, "Seu email não está cadastrado no sistema. Solicite acesso ao administrador.");
   } catch (error) {
     console.error("[verify] Error:", error);
     return apiError(error);

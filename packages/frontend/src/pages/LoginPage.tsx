@@ -1,48 +1,15 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { CreditCard, Eye, EyeOff } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import toast from "react-hot-toast";
 
-interface LoginForm {
-  email: string;
-  password: string;
-}
-
 export function LoginPage() {
-  const { user, loading, signInWithEmail, signInWithGoogle } = useAuth();
+  const { user, loading, signInWithGoogle } = useAuth();
   const [submitting, setSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>();
 
   if (!loading && user) return <Navigate to="/" replace />;
-
-  const onSubmit = async (data: LoginForm) => {
-    try {
-      setSubmitting(true);
-      await signInWithEmail(data.email, data.password);
-    } catch (err: unknown) {
-      const code = (err as { code?: string }).code ?? "";
-      if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
-        toast.error("Email ou senha inválidos");
-      } else if (code === "auth/operation-not-allowed") {
-        toast.error("Login com email não está habilitado. Ative no Firebase Console.");
-      } else {
-        console.error("Email sign-in error:", code, err);
-        toast.error("Erro ao fazer login. Tente novamente.");
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleGoogle = async () => {
     try {
@@ -51,7 +18,7 @@ export function LoginPage() {
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? "";
       if (code === "auth/popup-closed-by-user") {
-        return; // user closed popup, no error
+        return;
       } else if (code === "auth/unauthorized-domain") {
         toast.error("Domínio não autorizado. Adicione este domínio no Firebase Console → Authentication → Settings → Authorized domains.");
       } else if (code === "auth/operation-not-allowed") {
@@ -87,48 +54,12 @@ export function LoginPage() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Entrar na sua conta</h2>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              placeholder="seu@email.com"
-              {...register("email", { required: "Email obrigatório" })}
-              error={errors.email?.message}
-            />
-            <div className="relative">
-              <Input
-                label="Senha"
-                type={showPassword ? "text" : "password"}
-                placeholder="Digite sua senha"
-                {...register("password", { required: "Senha obrigatória" })}
-                error={errors.password?.message}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <Button type="submit" loading={submitting} className="w-full">
-              Entrar
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-gray-400">ou continue com</span>
-            </div>
-          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Entrar na sua conta</h2>
+          <p className="text-sm text-gray-500 mb-6">
+            Use seu Gmail cadastrado pelo administrador para acessar o sistema.
+          </p>
 
           <Button
-            variant="secondary"
             onClick={handleGoogle}
             loading={submitting}
             className="w-full"
@@ -139,8 +70,14 @@ export function LoginPage() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            Google
+            Entrar com Google
           </Button>
+
+          <div className="mt-5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <p className="text-xs text-amber-700 text-center">
+              Apenas emails autorizados pelo administrador podem acessar o sistema.
+            </p>
+          </div>
         </div>
 
         <p className="text-center text-primary-200 text-xs mt-6">
