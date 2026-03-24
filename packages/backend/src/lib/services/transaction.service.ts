@@ -33,9 +33,12 @@ export class TransactionService {
     const compradorDoc = await adminDb.collection("users").doc(user.uid).get();
     const compradorName = compradorDoc.exists ? compradorDoc.data()!.displayName : user.email;
 
-    // Get vendedor name from vendedores collection
+    // Get vendedor info from vendedores collection
     const vendedorDoc = await adminDb.collection("vendedores").doc(card.vendedorId).get();
-    const vendedorName = vendedorDoc.exists ? vendedorDoc.data()!.nome : card.vendedorName;
+    const vendedorData = vendedorDoc.exists ? vendedorDoc.data()! : null;
+    const vendedorName = vendedorData?.nome ?? card.vendedorName;
+    const vendedorPixKey = vendedorData?.pixKey ?? undefined;
+    const vendedorPhone = vendedorData?.phone ?? undefined;
 
     const now = new Date().toISOString();
     const docRef = adminDb.collection(TRANSACTIONS_COLLECTION).doc();
@@ -50,8 +53,11 @@ export class TransactionService {
 
       vendedorId: card.vendedorId,
       vendedorName,
+      vendedorPixKey,
+      vendedorPhone,
       compradorId: user.uid,
       compradorName,
+      cardNumber: card.cardNumber,
 
       feePercentage,
       feeAmount,

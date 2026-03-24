@@ -18,8 +18,11 @@ export interface Transaction {
 
   vendedorId: string;
   vendedorName: string;
+  vendedorPixKey?: string;
+  vendedorPhone?: string;
   compradorId: string;
   compradorName: string;
+  cardNumber?: string;
 
   feePercentage: number;
   feeAmount: number;
