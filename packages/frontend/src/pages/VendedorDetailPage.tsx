@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, Plus, CreditCard, Trash2, Phone, Mail, Key, FileText, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, Phone, Key, FileText, MapPin, Building, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { Loading } from "@/components/ui/Loading";
-import { useUser } from "@/hooks/useUsers";
+import { useVendedor } from "@/hooks/useVendedores";
 import { useCards, useCreateCard, useDeleteCard } from "@/hooks/useCards";
 import { CreateCardRequest, Card } from "@sistema-pagamentos/shared";
 
@@ -17,10 +17,10 @@ const CARD_TYPE_CONFIG: Record<string, { label: string; color: string; bg: strin
 };
 
 export function VendedorDetailPage() {
-  const { uid } = useParams<{ uid: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: vendedor, isLoading: loadingUser } = useUser(uid!);
-  const { data: cards, isLoading: loadingCards } = useCards(uid);
+  const { data: vendedor, isLoading: loadingVendedor } = useVendedor(id!);
+  const { data: cards, isLoading: loadingCards } = useCards(id);
   const createCard = useCreateCard();
   const deleteCard = useDeleteCard();
 
@@ -31,7 +31,7 @@ export function VendedorDetailPage() {
   });
 
   const onCreateCard = async (data: Omit<CreateCardRequest, "vendedorId">) => {
-    await createCard.mutateAsync({ ...data, vendedorId: uid! });
+    await createCard.mutateAsync({ ...data, vendedorId: id! });
     setCardModal(false);
     reset();
   };
@@ -41,7 +41,7 @@ export function VendedorDetailPage() {
     await deleteCard.mutateAsync(cardId);
   };
 
-  if (loadingUser || loadingCards) return <Loading />;
+  if (loadingVendedor || loadingCards) return <Loading />;
   if (!vendedor) return <p className="text-center text-gray-500 py-8">Vendedor não encontrado.</p>;
 
   return (
@@ -61,14 +61,21 @@ export function VendedorDetailPage() {
       <div className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl p-5 sm:p-6 text-white">
         <div className="flex items-center gap-4">
           <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold shrink-0">
-            {vendedor.displayName.charAt(0).toUpperCase()}
+            {vendedor.nome.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-lg font-bold truncate">{vendedor.displayName}</p>
+            <p className="text-lg font-bold truncate">{vendedor.nome}</p>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-primary-200 text-sm">
-              <span className="flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5" /> {vendedor.email}
-              </span>
+              {vendedor.empresa && (
+                <span className="flex items-center gap-1.5">
+                  <Building className="h-3.5 w-3.5" /> {vendedor.empresa}
+                </span>
+              )}
+              {vendedor.funcao && (
+                <span className="flex items-center gap-1.5">
+                  <Briefcase className="h-3.5 w-3.5" /> {vendedor.funcao}
+                </span>
+              )}
               {vendedor.phone && (
                 <span className="flex items-center gap-1.5">
                   <Phone className="h-3.5 w-3.5" /> {vendedor.phone}
@@ -142,11 +149,33 @@ export function VendedorDetailPage() {
             error={errors.cardBrand?.message}
           />
           <Input
+            label="Número do Cartão"
+            placeholder="0000 0000 0000 0000"
+            {...register("cardNumber")}
+          />
+          <Input
             label="Senha do Cartão"
             type="password"
             {...register("cardPassword", { required: "Senha é obrigatória" })}
             error={errors.cardPassword?.message}
           />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Valor Mensal (R$)"
+              type="number"
+              step="0.01"
+              placeholder="Ex: 800.00"
+              {...register("valorMensal", { valueAsNumber: true })}
+            />
+            <Input
+              label="Dia Vencimento"
+              type="number"
+              min={1}
+              max={31}
+              placeholder="Ex: 15"
+              {...register("diaVencimento", { valueAsNumber: true })}
+            />
+          </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCardModal(false)}>Cancelar</Button>
             <Button type="submit" loading={createCard.isPending}>Cadastrar</Button>
@@ -181,7 +210,18 @@ function CardItem({ card, onDelete }: { card: Card; onDelete: (id: string) => vo
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-3 space-y-1.5">
+        {card.cardNumber && (
+          <p className="text-xs text-gray-500">Nº: <span className="font-mono">{card.cardNumber}</span></p>
+        )}
+        {card.valorMensal && (
+          <p className="text-xs text-gray-500">Valor mensal: <span className="font-semibold text-gray-700">R$ {card.valorMensal.toFixed(2)}</span></p>
+        )}
+        {card.diaVencimento && (
+          <p className="text-xs text-gray-500">Vencimento: dia <span className="font-semibold text-gray-700">{card.diaVencimento}</span></p>
+        )}
+      </div>
+      <div className="mt-2 flex items-center justify-between">
         <span className="text-xs font-mono text-gray-400 uppercase">{card.cardType}</span>
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
           card.active ? "bg-white/80 text-green-700" : "bg-white/80 text-red-600"

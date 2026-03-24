@@ -11,9 +11,13 @@ export async function GET(
 ) {
   try {
     const authUser = await authenticateRequest(req);
-    requireRole(UserRole.ADMIN, UserRole.VENDEDOR)(authUser);
-
     const { uid } = await params;
+
+    // Users can view their own profile, Admin can view anyone
+    if (authUser.uid !== uid) {
+      requireRole(UserRole.ADMIN)(authUser);
+    }
+
     const user = await UserService.getById(uid);
     return apiResponse(user);
   } catch (error) {

@@ -23,7 +23,7 @@ export function TransactionsPage() {
 
   const transactions = data?.data ?? [];
   const pagination = data?.pagination;
-  const canCreate = user?.role === UserRole.ADMIN || user?.role === UserRole.VENDEDOR;
+  const canCreate = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPRADOR;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -103,7 +103,7 @@ export function TransactionsPage() {
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Data</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Comprador</th>
+                    <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendedor</th>
                     <th className="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo</th>
                     <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Saldo</th>
                     <th className="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Taxa</th>
@@ -119,7 +119,7 @@ export function TransactionsPage() {
                       onClick={() => navigate(`/transacoes/${t.id}`)}
                     >
                       <td className="px-5 py-3.5 text-gray-500 whitespace-nowrap">{formatDate(t.saleDate)}</td>
-                      <td className="px-5 py-3.5 font-semibold text-gray-900">{t.compradorName}</td>
+                      <td className="px-5 py-3.5 font-semibold text-gray-900">{t.vendedorName}</td>
                       <td className="px-5 py-3.5">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
                           {t.cardType}
@@ -153,7 +153,7 @@ export function TransactionsPage() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">{t.compradorName}</p>
+                    <p className="font-semibold text-gray-900 truncate">{t.vendedorName}</p>
                     <p className="text-xs text-gray-400">{formatDate(t.saleDate)} &middot; {t.cardType}</p>
                   </div>
                   <Badge status={t.status} />

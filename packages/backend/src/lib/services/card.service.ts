@@ -11,12 +11,12 @@ const CARDS_COLLECTION = "cards";
 
 export class CardService {
   static async create(data: CreateCardRequest, compradorName: string): Promise<Card> {
-    const { vendedorId, cardType, cardBrand, cardPassword } = data;
+    const { vendedorId, cardType, cardBrand, cardNumber, cardPassword, valorMensal, diaVencimento } = data;
 
-    // Get vendedor name
-    const vendedorDoc = await adminDb.collection("users").doc(vendedorId).get();
+    // Get vendedor name from vendedores collection
+    const vendedorDoc = await adminDb.collection("vendedores").doc(vendedorId).get();
     if (!vendedorDoc.exists) throw new ApiError(404, "Vendedor não encontrado");
-    const vendedorName = vendedorDoc.data()!.displayName;
+    const vendedorName = vendedorDoc.data()!.nome;
 
     const now = new Date().toISOString();
     const docRef = adminDb.collection(CARDS_COLLECTION).doc();
@@ -27,7 +27,10 @@ export class CardService {
       vendedorName,
       cardType,
       cardBrand,
+      cardNumber,
       cardPassword: encrypt(cardPassword),
+      valorMensal,
+      diaVencimento,
       active: true,
       createdAt: now,
       updatedAt: now,
@@ -90,7 +93,12 @@ export class CardService {
       updated.cardPassword = encrypt(data.cardPassword);
     }
 
-    await adminDb.collection(CARDS_COLLECTION).doc(id).set(updated);
+    // Remove undefined fields before saving
+    const cleanData = Object.fromEntries(
+      Object.entries(updated).filter(([, v]) => v !== undefined)
+    );
+
+    await adminDb.collection(CARDS_COLLECTION).doc(id).set(cleanData);
     return { ...updated, cardPassword: undefined };
   }
 

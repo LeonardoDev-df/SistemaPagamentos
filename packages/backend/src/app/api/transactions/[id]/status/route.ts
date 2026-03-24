@@ -10,7 +10,7 @@ export async function PUT(
 ) {
   try {
     const user = await authenticateRequest(req);
-    requireRole(UserRole.ADMIN, UserRole.VENDEDOR)(user);
+    requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
 
     const { id } = await params;
     const { status, note } = await req.json();

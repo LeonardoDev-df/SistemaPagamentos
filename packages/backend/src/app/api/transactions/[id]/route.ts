@@ -13,8 +13,7 @@ export async function GET(
     const user = await authenticateRequest(req);
     const { id } = await params;
 
-    const includePassword = user.role === UserRole.ADMIN || user.role === UserRole.VENDEDOR;
-    const transaction = await TransactionService.getById(id, includePassword);
+    const transaction = await TransactionService.getById(id);
 
     if (
       user.role === UserRole.COMPRADOR &&
@@ -35,7 +34,7 @@ export async function PUT(
 ) {
   try {
     const user = await authenticateRequest(req);
-    requireRole(UserRole.ADMIN, UserRole.VENDEDOR)(user);
+    requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
 
     const { id } = await params;
     const body = await req.json();

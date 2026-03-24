@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     const user = await authenticateRequest(req);
-    requireRole(UserRole.ADMIN, UserRole.VENDEDOR)(user);
+    requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
 
     const { id } = await params;
     const formData = await req.formData();
@@ -24,8 +24,8 @@ export async function POST(
       throw new ApiError(400, "Arquivo excede 5MB");
     }
 
-    if (!file.type.startsWith("image/")) {
-      throw new ApiError(400, "Apenas imagens são permitidas");
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      throw new ApiError(400, "Apenas imagens e PDFs são permitidos");
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

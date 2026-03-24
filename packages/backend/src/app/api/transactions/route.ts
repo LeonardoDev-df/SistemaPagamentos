@@ -31,10 +31,7 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const filters = {
       status: searchParams.get("status") as TransactionStatus | undefined,
-      vendedorId:
-        user.role === UserRole.VENDEDOR
-          ? user.uid
-          : searchParams.get("vendedorId") ?? undefined,
+      vendedorId: searchParams.get("vendedorId") ?? undefined,
       compradorId: searchParams.get("compradorId") ?? undefined,
       cardType: searchParams.get("cardType") as "VR" | "VA" | undefined,
       dateFrom: searchParams.get("dateFrom") ?? undefined,

@@ -26,12 +26,13 @@ export function TransactionDetailPage() {
   const [statusModal, setStatusModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<TransactionStatus | null>(null);
   const [statusNote, setStatusNote] = useState("");
+  const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (isLoading) return <Loading />;
   if (!transaction) return <p className="text-gray-500">Transação não encontrada.</p>;
 
-  const canEdit = user?.role === UserRole.ADMIN || user?.role === UserRole.VENDEDOR;
+  const canEdit = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPRADOR;
   const allowedTransitions = ALLOWED_TRANSITIONS[transaction.status];
 
   const handleStatusChange = async () => {
@@ -41,9 +42,16 @@ export function TransactionDetailPage() {
       status: selectedStatus,
       note: statusNote || undefined,
     });
+
+    // Upload receipt when marking as PAGO
+    if (selectedStatus === TransactionStatus.PAGO && paymentReceipt) {
+      await uploadReceipt.mutateAsync({ id: id!, file: paymentReceipt });
+    }
+
     setStatusModal(false);
     setSelectedStatus(null);
     setStatusNote("");
+    setPaymentReceipt(null);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,15 +82,15 @@ export function TransactionDetailPage() {
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <InfoItem label="Comprador" value={transaction.compradorName} />
           <InfoItem label="Vendedor" value={transaction.vendedorName} />
+          <InfoItem label="Comprador" value={transaction.compradorName} />
           <InfoItem label="Tipo" value={transaction.cardType} />
           <InfoItem label="Bandeira" value={transaction.cardBrand ?? "-"} />
           <InfoItem label="Valor Cartão" value={formatCurrency(transaction.cardValue)} />
           <InfoItem label="Saldo" value={formatCurrency(transaction.cardBalance)} />
-          <InfoItem label="Taxa" value={`${transaction.feePercentage}% (${formatCurrency(transaction.feeAmount)})`} />
-          <InfoItem label="Valor Líquido" value={formatCurrency(transaction.netAmount)} highlight />
-          <InfoItem label="Data da Venda" value={formatDateTime(transaction.saleDate)} />
+          <InfoItem label="Desconto" value={`${transaction.feePercentage}% (${formatCurrency(transaction.feeAmount)})`} />
+          <InfoItem label="Valor Pago ao Vendedor" value={formatCurrency(transaction.netAmount)} highlight />
+          <InfoItem label="Data da Compra" value={formatDateTime(transaction.saleDate)} />
           {transaction.paymentDate && (
             <InfoItem label="Data Pagamento" value={formatDateTime(transaction.paymentDate)} />
           )}
@@ -90,7 +98,7 @@ export function TransactionDetailPage() {
 
         {/* Receipt */}
         <div className="border-t pt-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Comprovante</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Comprovante de Pagamento</h3>
           {transaction.receiptUrl ? (
             <a
               href={transaction.receiptUrl}
@@ -105,7 +113,7 @@ export function TransactionDetailPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.pdf"
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -144,7 +152,7 @@ export function TransactionDetailPage() {
         </div>
       </div>
 
-      {/* Status Change Modal */}
+      {/* Status Change Modal - with receipt upload for PAGO */}
       <Modal open={statusModal} onClose={() => setStatusModal(false)} title="Alterar Status">
         <div className="space-y-4">
           <div>
@@ -164,6 +172,28 @@ export function TransactionDetailPage() {
               ))}
             </select>
           </div>
+
+          {/* Show receipt upload when selecting PAGO */}
+          {selectedStatus === TransactionStatus.PAGO && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Comprovante de Pagamento
+              </label>
+              <label className="flex items-center justify-center gap-2 w-full rounded-xl border border-dashed border-gray-300 hover:border-accent-400 px-4 py-5 cursor-pointer transition-colors bg-gray-50 hover:bg-accent-50/50">
+                <Upload className="h-5 w-5 text-gray-400" />
+                <span className="text-sm text-gray-500">
+                  {paymentReceipt ? paymentReceipt.name : "Clique para anexar comprovante"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={(e) => setPaymentReceipt(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Observação (opcional)
@@ -181,7 +211,7 @@ export function TransactionDetailPage() {
             </Button>
             <Button
               onClick={handleStatusChange}
-              loading={updateStatus.isPending}
+              loading={updateStatus.isPending || uploadReceipt.isPending}
               disabled={!selectedStatus}
             >
               Confirmar

@@ -4,6 +4,9 @@ import {
   TrendingUp,
   Wallet,
   ArrowRight,
+  CreditCard,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/Card";
@@ -29,25 +32,44 @@ export function DashboardPage() {
         <p className="text-sm text-gray-500 mt-1">Resumo das operações</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Main Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <Card
+          title="Total Cartões"
+          value={String(stats.totalCartoes)}
+          icon={<CreditCard className="h-5 w-5" />}
+        />
+        <Card
+          title="Pagos"
+          value={String(stats.cartoesPagos)}
+          icon={<CheckCircle className="h-5 w-5" />}
+        />
+        <Card
+          title="Não Pagos"
+          value={String(stats.cartoesNaoPagos)}
+          icon={<XCircle className="h-5 w-5" />}
+        />
         <Card
           title="Transações"
           value={String(stats.totalTransactions)}
           icon={<ArrowLeftRight className="h-5 w-5" />}
         />
+      </div>
+
+      {/* Financial Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card
-          title="Valor Cartões"
+          title="Total Comprado"
           value={formatCurrency(stats.totalCardValue)}
           icon={<DollarSign className="h-5 w-5" />}
         />
         <Card
-          title="Total Taxas"
+          title="Descontos (15%)"
           value={formatCurrency(stats.totalFeeAmount)}
           icon={<TrendingUp className="h-5 w-5" />}
         />
         <Card
-          title="Valor Líquido"
+          title="Total Pago a Vendedores"
           value={formatCurrency(stats.totalNetAmount)}
           icon={<Wallet className="h-5 w-5" />}
         />
@@ -112,7 +134,7 @@ export function DashboardPage() {
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-gray-900 truncate">
-                        {t.compradorName}
+                        {t.vendedorName}
                       </p>
                       <p className="text-xs text-gray-400">{formatDate(t.createdAt)}</p>
                     </div>

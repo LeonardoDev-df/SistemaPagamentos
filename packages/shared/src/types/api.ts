@@ -21,7 +21,22 @@ export interface DashboardStats {
   totalCardValue: number;
   totalFeeAmount: number;
   totalNetAmount: number;
+  totalCartoes: number;
+  cartoesPagos: number;
+  cartoesNaoPagos: number;
+  cartoesAbertos: number;
   byStatus: Record<string, number>;
   byCardType: Record<string, number>;
+  byVendedor: VendedorResumo[];
   recentTransactions: Transaction[];
+}
+
+export interface VendedorResumo {
+  vendedorId: string;
+  vendedorName: string;
+  totalCartoes: number;
+  totalTransacoes: number;
+  totalPago: number;
+  totalNaoPago: number;
+  totalFaturado: number;
 }

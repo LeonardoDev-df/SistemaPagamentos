@@ -8,6 +8,7 @@ import {
   LogOut,
   CreditCard,
   X,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@sistema-pagamentos/shared";
@@ -79,16 +80,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <p className="px-3 mb-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Menu</p>
 
-          {(role === UserRole.ADMIN || role === UserRole.COMPRADOR) && (
-            <NavLink to={ROUTES.DASHBOARD} end className={navItemClass} onClick={onClose}>
-              <LayoutDashboard className="h-5 w-5 shrink-0" />
-              Dashboard
-            </NavLink>
-          )}
+          <NavLink to={ROUTES.DASHBOARD} end className={navItemClass} onClick={onClose}>
+            <LayoutDashboard className="h-5 w-5 shrink-0" />
+            Dashboard
+          </NavLink>
 
           <NavLink to={ROUTES.TRANSACTIONS} className={navItemClass} onClick={onClose}>
             <ArrowLeftRight className="h-5 w-5 shrink-0" />
-            {role === UserRole.VENDEDOR ? "Minhas Transações" : "Transações"}
+            Transações
           </NavLink>
 
           {/* Admin: manage Compradores */}
@@ -106,13 +105,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </>
           )}
 
-          {/* Comprador: manage Vendedores */}
+          {/* Comprador: manage Vendedores + Reports */}
           {role === UserRole.COMPRADOR && (
             <>
               <p className="px-3 mt-5 mb-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Gerenciamento</p>
               <NavLink to={ROUTES.USERS} className={navItemClass} onClick={onClose}>
                 <Users className="h-5 w-5 shrink-0" />
                 Vendedores
+              </NavLink>
+              <NavLink to={ROUTES.REPORTS} className={navItemClass} onClick={onClose}>
+                <BarChart3 className="h-5 w-5 shrink-0" />
+                Relatórios
               </NavLink>
             </>
           )}

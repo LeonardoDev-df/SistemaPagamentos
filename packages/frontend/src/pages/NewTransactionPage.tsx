@@ -7,13 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { useCreateTransaction, useUploadReceipt } from "@/hooks/useTransactions";
-import { useUsers } from "@/hooks/useUsers";
+import { useVendedores } from "@/hooks/useVendedores";
 import { useCards } from "@/hooks/useCards";
 import { useSettings } from "@/hooks/useSettings";
 import {
   createTransactionSchema,
   CreateTransactionRequest,
-  UserRole,
 } from "@sistema-pagamentos/shared";
 import { ROUTES } from "@/config/routes";
 
@@ -21,7 +20,7 @@ export function NewTransactionPage() {
   const navigate = useNavigate();
   const createTransaction = useCreateTransaction();
   const uploadReceipt = useUploadReceipt();
-  const { data: vendedores } = useUsers(UserRole.VENDEDOR);
+  const { data: vendedores } = useVendedores();
   const { data: settings } = useSettings();
 
   const [selectedVendedor, setSelectedVendedor] = useState("");
@@ -42,7 +41,6 @@ export function NewTransactionPage() {
     },
   });
 
-  // Update fee when settings load
   useEffect(() => {
     if (settings?.defaultFeePercentage) {
       setValue("feePercentage", settings.defaultFeePercentage);
@@ -57,7 +55,6 @@ export function NewTransactionPage() {
   const onSubmit = async (data: CreateTransactionRequest) => {
     const result = await createTransaction.mutateAsync(data);
 
-    // Upload receipt if provided
     if (receiptFile && result?.id) {
       await uploadReceipt.mutateAsync({ id: result.id, file: receiptFile });
     }
@@ -65,15 +62,19 @@ export function NewTransactionPage() {
     navigate(ROUTES.TRANSACTIONS);
   };
 
-  const vendedorOptions = (vendedores ?? []).map((u) => ({
-    value: u.uid,
-    label: u.displayName,
-  }));
+  const vendedorOptions = (vendedores ?? [])
+    .filter((v) => v.active)
+    .map((v) => ({
+      value: v.id,
+      label: v.nome + (v.empresa ? ` (${v.empresa})` : ""),
+    }));
 
-  const cardOptions = (cards ?? []).map((c) => ({
-    value: c.id,
-    label: `${c.cardType} - ${c.cardBrand}`,
-  }));
+  const cardOptions = (cards ?? [])
+    .filter((c) => c.active)
+    .map((c) => ({
+      value: c.id,
+      label: `${c.cardType} - ${c.cardBrand}${c.cardNumber ? ` (${c.cardNumber.slice(-4)})` : ""}${c.valorMensal ? ` - R$ ${c.valorMensal.toFixed(2)}` : ""}`,
+    }));
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -83,7 +84,7 @@ export function NewTransactionPage() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Nova Venda</h1>
-          <p className="text-sm text-gray-500">Registrar venda mensal de cartão</p>
+          <p className="text-sm text-gray-500">Registrar compra mensal de cartão</p>
         </div>
       </div>
 
@@ -98,11 +99,11 @@ export function NewTransactionPage() {
           value={selectedVendedor}
           onChange={(e) => {
             setSelectedVendedor(e.target.value);
-            setValue("cardId", ""); // Reset card selection
+            setValue("cardId", "");
           }}
         />
 
-        {/* Step 2: Select card (only after vendedor) */}
+        {/* Step 2: Select card */}
         {selectedVendedor && (
           <Select
             label="Cartão"
@@ -124,7 +125,7 @@ export function NewTransactionPage() {
                 {...register("cardValue", { valueAsNumber: true })}
               />
               <Input
-                label="Saldo do Cartão (R$)"
+                label="Saldo Disponível (R$)"
                 type="number"
                 step="0.01"
                 error={errors.cardBalance?.message}
@@ -134,14 +135,14 @@ export function NewTransactionPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Taxa (%)"
+                label="Desconto (%)"
                 type="number"
                 step="0.1"
                 error={errors.feePercentage?.message}
                 {...register("feePercentage", { valueAsNumber: true })}
               />
               <Input
-                label="Data da Venda"
+                label="Data da Compra"
                 type="date"
                 error={errors.saleDate?.message}
                 {...register("saleDate")}
@@ -151,7 +152,7 @@ export function NewTransactionPage() {
             {/* Receipt upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Comprovante
+                Comprovante (opcional)
               </label>
               <label className="flex items-center justify-center gap-2 w-full rounded-xl border border-dashed border-gray-300 hover:border-accent-400 px-4 py-6 cursor-pointer transition-colors bg-gray-50 hover:bg-accent-50/50">
                 <Upload className="h-5 w-5 text-gray-400" />
@@ -170,13 +171,13 @@ export function NewTransactionPage() {
             {/* Summary */}
             {cardBalance > 0 && (
               <div className="bg-gradient-to-br from-accent-50 to-accent-100/50 rounded-xl p-4 sm:p-5 space-y-2.5 border border-accent-200/50">
-                <h3 className="text-sm font-bold text-primary-800">Resumo da Venda</h3>
+                <h3 className="text-sm font-bold text-primary-800">Resumo da Compra</h3>
                 <div className="flex justify-between text-sm">
                   <span className="text-primary-600">Saldo do cartão:</span>
                   <span className="font-semibold text-primary-800">R$ {cardBalance?.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-primary-600">Taxa ({feePercentage}%):</span>
+                  <span className="text-primary-600">Desconto ({feePercentage}%):</span>
                   <span className="font-semibold text-danger-600">- R$ {feeAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm border-t border-accent-300/50 pt-2.5">
@@ -195,7 +196,7 @@ export function NewTransactionPage() {
             loading={createTransaction.isPending || uploadReceipt.isPending}
             disabled={!selectedVendedor}
           >
-            Registrar Venda
+            Registrar Compra
           </Button>
         </div>
       </form>

@@ -8,15 +8,10 @@ import { apiResponse, apiError, ApiError } from "@/lib/utils/response";
 export async function GET(req: NextRequest) {
   try {
     const user = await authenticateRequest(req);
-    requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
+    requireRole(UserRole.ADMIN)(user);
 
     let role = req.nextUrl.searchParams.get("role") as UserRole | null;
     const active = req.nextUrl.searchParams.get("active");
-
-    // Force role filter based on current user's role
-    if (user.role === UserRole.COMPRADOR) {
-      role = UserRole.VENDEDOR; // Comprador only sees vendedores
-    }
 
     const users = await UserService.list({
       role: role ?? undefined,
@@ -32,19 +27,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const user = await authenticateRequest(req);
-    requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
+    requireRole(UserRole.ADMIN)(user);
 
     const body = await req.json();
-
-    // Auto-set role based on who is creating
-    if (user.role === UserRole.ADMIN) {
-      body.role = UserRole.COMPRADOR;
-    } else if (user.role === UserRole.COMPRADOR) {
-      body.role = UserRole.VENDEDOR;
-    }
+    // Admin only creates Compradores
+    body.role = UserRole.COMPRADOR;
 
     const validated = validateBody(createUserSchema, body);
-
     const newUser = await UserService.create(validated);
     return apiResponse(newUser, 201);
   } catch (error) {

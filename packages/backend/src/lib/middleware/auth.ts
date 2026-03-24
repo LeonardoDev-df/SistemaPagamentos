@@ -22,7 +22,7 @@ export async function authenticateRequest(req: NextRequest): Promise<Authenticat
     return {
       uid: decoded.uid,
       email: decoded.email ?? "",
-      role: (decoded.role as UserRole) ?? UserRole.COMPRADOR,
+      role: (decoded.role as UserRole) || UserRole.COMPRADOR,
     };
   } catch {
     throw new ApiError(401, "Token inválido ou expirado");

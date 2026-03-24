@@ -9,6 +9,7 @@ import { NewTransactionPage } from "@/pages/NewTransactionPage";
 import { TransactionDetailPage } from "@/pages/TransactionDetailPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { VendedorDetailPage } from "@/pages/VendedorDetailPage";
+import { ReportsPage } from "@/pages/ReportsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 
@@ -45,11 +46,21 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
-          path="/usuarios/:uid"
+          path="/vendedores/:id"
           element={
             <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.COMPRADOR]}>
               <VendedorDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/relatorios"
+          element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.COMPRADOR]}>
+              <ReportsPage />
             </ProtectedRoute>
           }
         />

@@ -29,9 +29,13 @@ export class TransactionService {
     const feePercentage = data.feePercentage ?? (await SettingsService.getDefaultFeePercentage());
     const { feeAmount, netAmount } = calculateFee(data.cardBalance, feePercentage);
 
-    // Comprador is the logged-in user, vendedor comes from the card
+    // Comprador is the logged-in user, vendedor comes from the card (vendedores collection)
     const compradorDoc = await adminDb.collection("users").doc(user.uid).get();
     const compradorName = compradorDoc.exists ? compradorDoc.data()!.displayName : user.email;
+
+    // Get vendedor name from vendedores collection
+    const vendedorDoc = await adminDb.collection("vendedores").doc(card.vendedorId).get();
+    const vendedorName = vendedorDoc.exists ? vendedorDoc.data()!.nome : card.vendedorName;
 
     const now = new Date().toISOString();
     const docRef = adminDb.collection(TRANSACTIONS_COLLECTION).doc();
@@ -45,7 +49,7 @@ export class TransactionService {
       cardBrand: card.cardBrand,
 
       vendedorId: card.vendedorId,
-      vendedorName: card.vendedorName,
+      vendedorName,
       compradorId: user.uid,
       compradorName,
 
