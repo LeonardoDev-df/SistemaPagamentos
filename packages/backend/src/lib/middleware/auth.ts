@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { UserRole } from "@sistema-pagamentos/shared";
-import { adminAuth } from "../firebase/admin";
+import { adminAuth, adminDb } from "../firebase/admin";
 import { ApiError } from "../utils/response";
 
 export interface AuthenticatedUser {
@@ -19,12 +19,29 @@ export async function authenticateRequest(req: NextRequest): Promise<Authenticat
 
   try {
     const decoded = await adminAuth.verifyIdToken(token);
+    let role = decoded.role as UserRole | undefined;
+
+    // If token doesn't have role claims, look up in Firestore
+    if (!role) {
+      const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
+      if (userDoc.exists) {
+        role = userDoc.data()!.role as UserRole;
+        // Set claims for next time so token will have role
+        try {
+          await adminAuth.setCustomUserClaims(decoded.uid, { role });
+        } catch {
+          // non-critical
+        }
+      }
+    }
+
     return {
       uid: decoded.uid,
       email: decoded.email ?? "",
-      role: (decoded.role as UserRole) || UserRole.COMPRADOR,
+      role: role || UserRole.COMPRADOR,
     };
-  } catch {
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
     throw new ApiError(401, "Token inválido ou expirado");
   }
 }

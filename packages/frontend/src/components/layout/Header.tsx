@@ -7,7 +7,6 @@ interface HeaderProps {
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Administrador",
-  VENDEDOR: "Vendedor",
   COMPRADOR: "Comprador",
 };
 
@@ -15,7 +14,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user } = useAuth();
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
+    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-200/60 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
       <button
         onClick={onMenuClick}
         className="lg:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors"
@@ -31,10 +30,10 @@ export function Header({ onMenuClick }: HeaderProps) {
         </button>
 
         <div className="hidden sm:block text-right">
-          <p className="text-sm font-semibold text-gray-900">{user?.displayName}</p>
-          <p className="text-xs text-gray-500">{ROLE_LABELS[user?.role ?? ""] || user?.role}</p>
+          <p className="text-sm font-bold text-gray-900">{user?.displayName}</p>
+          <p className="text-xs text-primary-500 font-medium">{ROLE_LABELS[user?.role ?? ""] || user?.role}</p>
         </div>
-        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-semibold text-sm shadow-md shadow-primary-500/20">
+        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary-500/25 ring-2 ring-primary-200">
           {user?.displayName?.charAt(0).toUpperCase()}
         </div>
       </div>

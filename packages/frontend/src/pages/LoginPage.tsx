@@ -20,11 +20,9 @@ export function LoginPage() {
       if (code === "auth/popup-closed-by-user") {
         return;
       } else if (code === "auth/unauthorized-domain") {
-        toast.error("Domínio não autorizado. Adicione este domínio no Firebase Console → Authentication → Settings → Authorized domains.");
+        toast.error("Domínio não autorizado. Adicione este domínio no Firebase Console.");
       } else if (code === "auth/operation-not-allowed") {
-        toast.error("Login com Google não está habilitado. Ative no Firebase Console → Authentication → Sign-in method.");
-      } else if (code === "auth/internal-error") {
-        toast.error("Erro interno do Firebase. Verifique as configurações do projeto.");
+        toast.error("Login com Google não está habilitado no Firebase.");
       } else {
         console.error("Google sign-in error:", code, err);
         toast.error(`Erro ao entrar com Google: ${code || "desconhecido"}`);
@@ -35,34 +33,34 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 flex items-center justify-center px-4 py-8">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #3730a3 60%, #064e3b 100%)" }}>
+      {/* Decorative blurs */}
+      <div className="absolute top-1/4 -left-20 w-72 h-72 bg-primary-500/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 -right-20 w-72 h-72 bg-accent-500/20 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary-400/10 rounded-full blur-3xl" />
 
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-md animate-fade-in-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-accent-500 border border-accent-400/30 text-primary-900 mb-4 shadow-lg shadow-accent-500/30">
+          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-br from-accent-400 to-accent-600 text-white mb-4 shadow-xl shadow-accent-500/30">
             <CreditCard className="h-8 w-8" />
           </div>
-          <h1 className="text-3xl font-bold text-white">SisPag</h1>
-          <p className="text-primary-200 mt-1 text-sm">Sistema de Controle de Pagamentos</p>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight">SisPag</h1>
+          <p className="text-white/50 mt-1 text-sm font-medium">Sistema de Controle de Pagamentos</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Entrar na sua conta</h2>
+        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 p-6 sm:p-8 border border-white/20">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Bem-vindo</h2>
           <p className="text-sm text-gray-500 mb-6">
-            Use seu Gmail cadastrado pelo administrador para acessar o sistema.
+            Use seu Gmail autorizado para acessar o sistema.
           </p>
 
           <Button
             onClick={handleGoogle}
             loading={submitting}
-            className="w-full"
+            variant="secondary"
+            className="w-full !py-3 !text-base !font-semibold !border-gray-200 hover:!shadow-md"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -73,15 +71,15 @@ export function LoginPage() {
             Entrar com Google
           </Button>
 
-          <div className="mt-5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-            <p className="text-xs text-amber-700 text-center">
-              Apenas emails autorizados pelo administrador podem acessar o sistema.
+          <div className="mt-5 p-3 bg-primary-50 border border-primary-100 rounded-xl">
+            <p className="text-xs text-primary-700 text-center font-medium">
+              Apenas emails autorizados pelo administrador podem acessar.
             </p>
           </div>
         </div>
 
-        <p className="text-center text-primary-200 text-xs mt-6">
-          SisPag &copy; {new Date().getFullYear()} - Controle de Pagamentos VR/VA
+        <p className="text-center text-white/30 text-xs mt-6 font-medium">
+          SisPag &copy; {new Date().getFullYear()} &middot; Controle de Pagamentos VR/VA
         </p>
       </div>
     </div>
