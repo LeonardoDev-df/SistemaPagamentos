@@ -40,30 +40,36 @@ export class VendedorService {
     return doc.data() as Vendedor;
   }
 
+  /**
+   * List vendedores by comprador - fetches all and filters in memory
+   * to avoid needing composite Firestore indexes
+   */
   static async listByComprador(compradorId: string, activeOnly?: boolean): Promise<Vendedor[]> {
-    let query: FirebaseFirestore.Query = adminDb
-      .collection(VENDEDORES_COLLECTION)
-      .where("compradorId", "==", compradorId);
+    const snapshot = await adminDb.collection(VENDEDORES_COLLECTION).get();
+    let vendedores = snapshot.docs
+      .map((doc) => doc.data() as Vendedor)
+      .filter((v) => v.compradorId === compradorId);
 
     if (activeOnly !== undefined) {
-      query = query.where("active", "==", activeOnly);
+      vendedores = vendedores.filter((v) => v.active === activeOnly);
     }
 
-    query = query.orderBy("createdAt", "desc");
-    const snapshot = await query.get();
-    return snapshot.docs.map((doc) => doc.data() as Vendedor);
+    return vendedores.sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   static async listAll(activeOnly?: boolean): Promise<Vendedor[]> {
-    let query: FirebaseFirestore.Query = adminDb.collection(VENDEDORES_COLLECTION);
+    const snapshot = await adminDb.collection(VENDEDORES_COLLECTION).get();
+    let vendedores = snapshot.docs.map((doc) => doc.data() as Vendedor);
 
     if (activeOnly !== undefined) {
-      query = query.where("active", "==", activeOnly);
+      vendedores = vendedores.filter((v) => v.active === activeOnly);
     }
 
-    query = query.orderBy("createdAt", "desc");
-    const snapshot = await query.get();
-    return snapshot.docs.map((doc) => doc.data() as Vendedor);
+    return vendedores.sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   static async update(id: string, data: UpdateVendedorRequest): Promise<Vendedor> {

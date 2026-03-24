@@ -1,20 +1,25 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, Plus, CreditCard, Trash2, Phone, Key, FileText, MapPin, Building, Briefcase } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, Phone, Key, FileText, MapPin, Building, Briefcase, ToggleRight, ToggleLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { Loading } from "@/components/ui/Loading";
 import { useVendedor } from "@/hooks/useVendedores";
-import { useCards, useCreateCard, useDeleteCard } from "@/hooks/useCards";
-import { CreateCardRequest, Card } from "@sistema-pagamentos/shared";
+import { useCards, useCreateCard, useDeleteCard, useUpdateCard } from "@/hooks/useCards";
+import { CreateCardRequest, Card, UpdateCardRequest } from "@sistema-pagamentos/shared";
 
-const CARD_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  VR: { label: "Vale Refeição", color: "text-orange-600", bg: "bg-orange-50 border-orange-200" },
-  VA: { label: "Vale Alimentação", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
+const CARD_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  VR: { label: "Vale Refeição", color: "text-orange-600", bg: "bg-gradient-to-br from-orange-50 to-orange-100", border: "border-orange-200" },
+  VA: { label: "Vale Alimentação", color: "text-emerald-600", bg: "bg-gradient-to-br from-emerald-50 to-emerald-100", border: "border-emerald-200" },
 };
+
+function maskCardNumber(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 16);
+  return d.replace(/(.{4})/g, "$1 ").trim();
+}
 
 export function VendedorDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,22 +28,27 @@ export function VendedorDetailPage() {
   const { data: cards, isLoading: loadingCards } = useCards(id);
   const createCard = useCreateCard();
   const deleteCard = useDeleteCard();
+  const updateCard = useUpdateCard();
 
   const [cardModal, setCardModal] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Omit<CreateCardRequest, "vendedorId">>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<Omit<CreateCardRequest, "vendedorId">>({
     defaultValues: { cardType: "VR" as const },
   });
 
   const onCreateCard = async (data: Omit<CreateCardRequest, "vendedorId">) => {
     await createCard.mutateAsync({ ...data, vendedorId: id! });
     setCardModal(false);
-    reset();
+    reset({ cardType: "VR" as const });
   };
 
   const handleDeleteCard = async (cardId: string) => {
     if (!confirm("Remover este cartão?")) return;
     await deleteCard.mutateAsync(cardId);
+  };
+
+  const handleToggleCard = async (card: Card) => {
+    await updateCard.mutateAsync({ id: card.id, data: { active: !card.active } });
   };
 
   if (loadingVendedor || loadingCards) return <Loading />;
@@ -58,43 +68,33 @@ export function VendedorDetailPage() {
       </div>
 
       {/* Profile Card */}
-      <div className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-2xl p-5 sm:p-6 text-white">
+      <div className="rounded-2xl p-5 sm:p-6 text-white" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%)" }}>
         <div className="flex items-center gap-4">
           <div className="h-14 w-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold shrink-0">
             {vendedor.nome.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-lg font-bold truncate">{vendedor.nome}</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-primary-200 text-sm">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-white/60 text-sm">
               {vendedor.empresa && (
-                <span className="flex items-center gap-1.5">
-                  <Building className="h-3.5 w-3.5" /> {vendedor.empresa}
-                </span>
+                <span className="flex items-center gap-1.5"><Building className="h-3.5 w-3.5" /> {vendedor.empresa}</span>
               )}
               {vendedor.funcao && (
-                <span className="flex items-center gap-1.5">
-                  <Briefcase className="h-3.5 w-3.5" /> {vendedor.funcao}
-                </span>
+                <span className="flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" /> {vendedor.funcao}</span>
               )}
               {vendedor.phone && (
-                <span className="flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5" /> {vendedor.phone}
-                </span>
+                <span className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> {vendedor.phone}</span>
               )}
               {vendedor.pixKey && (
-                <span className="flex items-center gap-1.5">
-                  <Key className="h-3.5 w-3.5" /> {vendedor.pixKey}
-                </span>
+                <span className="flex items-center gap-1.5"><Key className="h-3.5 w-3.5" /> {vendedor.pixKey}</span>
               )}
               {vendedor.cpf && (
-                <span className="flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5" /> CPF: {vendedor.cpf}
-                </span>
+                <span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> CPF: {vendedor.cpf}</span>
               )}
               {vendedor.address && (
                 <span className="flex items-center gap-1.5">
                   <MapPin className="h-3.5 w-3.5" />
-                  {[vendedor.address.rua, vendedor.address.bairro, vendedor.address.cidade, vendedor.address.estado, vendedor.address.cep].filter(Boolean).join(", ")}
+                  {[vendedor.address.rua, vendedor.address.bairro, vendedor.address.cidade, vendedor.address.estado].filter(Boolean).join(", ")}
                 </span>
               )}
             </div>
@@ -110,14 +110,14 @@ export function VendedorDetailPage() {
       {/* Cards Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Cartões Cadastrados</h2>
+          <h2 className="text-lg font-bold text-gray-900">Cartões ({(cards ?? []).length})</h2>
           <Button onClick={() => { reset({ cardType: "VR" as const }); setCardModal(true); }}>
             <Plus className="h-4 w-4" /> Novo Cartão
           </Button>
         </div>
 
         {(cards ?? []).length === 0 ? (
-          <div className="bg-white rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
             <CreditCard className="h-10 w-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium">Nenhum cartão cadastrado</p>
             <p className="text-sm text-gray-400 mt-1">Adicione o primeiro cartão deste vendedor</p>
@@ -125,7 +125,7 @@ export function VendedorDetailPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(cards ?? []).map((card) => (
-              <CardItem key={card.id} card={card} onDelete={handleDeleteCard} />
+              <CardItem key={card.id} card={card} onDelete={handleDeleteCard} onToggle={handleToggleCard} />
             ))}
           </div>
         )}
@@ -135,16 +135,25 @@ export function VendedorDetailPage() {
       <Modal open={cardModal} onClose={() => setCardModal(false)} title="Cadastrar Cartão">
         <form onSubmit={handleSubmit(onCreateCard)} className="space-y-4">
           <Select
-            label="Tipo do Cartão"
+            label="Tipo do Cartão *"
             options={[
               { value: "VR", label: "Vale Refeição (VR)" },
               { value: "VA", label: "Vale Alimentação (VA)" },
             ]}
             {...register("cardType")}
           />
-          <Input
-            label="Bandeira"
-            placeholder="Ex: Alelo, Sodexo, VR, Ticket"
+          <Select
+            label="Bandeira *"
+            options={[
+              { value: "Alelo", label: "Alelo" },
+              { value: "Sodexo", label: "Sodexo" },
+              { value: "VR", label: "VR" },
+              { value: "Ticket", label: "Ticket" },
+              { value: "Flash", label: "Flash" },
+              { value: "iFood", label: "iFood Benefícios" },
+              { value: "Swile", label: "Swile" },
+              { value: "Outro", label: "Outro" },
+            ]}
             {...register("cardBrand", { required: "Bandeira é obrigatória" })}
             error={errors.cardBrand?.message}
           />
@@ -152,10 +161,16 @@ export function VendedorDetailPage() {
             label="Número do Cartão"
             placeholder="0000 0000 0000 0000"
             {...register("cardNumber")}
+            onChange={(e) => {
+              const m = maskCardNumber(e.target.value);
+              e.target.value = m;
+              setValue("cardNumber", m);
+            }}
           />
           <Input
-            label="Senha do Cartão"
+            label="Senha do Cartão *"
             type="password"
+            placeholder="Senha numérica do cartão"
             {...register("cardPassword", { required: "Senha é obrigatória" })}
             error={errors.cardPassword?.message}
           />
@@ -186,33 +201,42 @@ export function VendedorDetailPage() {
   );
 }
 
-function CardItem({ card, onDelete }: { card: Card; onDelete: (id: string) => void }) {
+function CardItem({ card, onDelete, onToggle }: { card: Card; onDelete: (id: string) => void; onToggle: (card: Card) => void }) {
+  const [showPass, setShowPass] = useState(false);
   const config = CARD_TYPE_CONFIG[card.cardType] ?? CARD_TYPE_CONFIG.VR;
 
   return (
-    <div className={`rounded-xl border-2 p-4 transition-all hover:shadow-md ${config.bg}`}>
+    <div className={`rounded-xl border-2 p-4 transition-all hover:shadow-md ${config.bg} ${config.border} ${!card.active ? "opacity-60" : ""}`}>
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className={`h-11 w-11 rounded-xl flex items-center justify-center bg-white shadow-sm ${config.color}`}>
             <CreditCard className="h-5 w-5" />
           </div>
           <div>
-            <p className={`font-bold text-sm ${config.color}`}>
-              {config.label}
-            </p>
-            <p className="text-sm text-gray-600 font-medium">{card.cardBrand}</p>
+            <p className={`font-bold text-sm ${config.color}`}>{config.label}</p>
+            <p className="text-sm text-gray-600 font-semibold">{card.cardBrand}</p>
           </div>
         </div>
-        <button
-          onClick={() => onDelete(card.id)}
-          className="p-1.5 rounded-lg hover:bg-white/60 text-red-400 hover:text-red-600 transition-colors"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onToggle(card)}
+            className={`p-1 rounded-lg transition-colors ${card.active ? "text-green-600 hover:bg-green-100" : "text-red-500 hover:bg-red-100"}`}
+            title={card.active ? "Desativar" : "Ativar"}
+          >
+            {card.active ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={() => onDelete(card.id)}
+            className="p-1 rounded-lg hover:bg-white/60 text-red-400 hover:text-red-600 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
+
       <div className="mt-3 space-y-1.5">
         {card.cardNumber && (
-          <p className="text-xs text-gray-500">Nº: <span className="font-mono">{card.cardNumber}</span></p>
+          <p className="text-xs text-gray-500">Nº: <span className="font-mono font-semibold text-gray-700">{card.cardNumber}</span></p>
         )}
         {card.valorMensal && (
           <p className="text-xs text-gray-500">Valor mensal: <span className="font-semibold text-gray-700">R$ {card.valorMensal.toFixed(2)}</span></p>
@@ -221,9 +245,9 @@ function CardItem({ card, onDelete }: { card: Card; onDelete: (id: string) => vo
           <p className="text-xs text-gray-500">Vencimento: dia <span className="font-semibold text-gray-700">{card.diaVencimento}</span></p>
         )}
       </div>
+
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs font-mono text-gray-400 uppercase">{card.cardType}</span>
-        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
           card.active ? "bg-white/80 text-green-700" : "bg-white/80 text-red-600"
         }`}>
           {card.active ? "Ativo" : "Inativo"}

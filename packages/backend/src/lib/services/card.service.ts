@@ -37,7 +37,7 @@ export class CardService {
     };
 
     await docRef.set(card);
-    return { ...card, cardPassword: undefined }; // Don't return encrypted password in response
+    return { ...card, cardPassword: undefined };
   }
 
   static async getById(id: string): Promise<Card> {
@@ -54,30 +54,24 @@ export class CardService {
     };
   }
 
+  /**
+   * List cards - fetches all and filters in memory to avoid composite index issues
+   */
   static async listByVendedor(vendedorId: string): Promise<Card[]> {
-    const snapshot = await adminDb
-      .collection(CARDS_COLLECTION)
-      .where("vendedorId", "==", vendedorId)
-      .orderBy("createdAt", "desc")
-      .get();
-
-    return snapshot.docs.map((doc) => {
-      const data = doc.data() as Card;
-      return { ...data, cardPassword: undefined }; // Strip encrypted password
-    });
+    const snapshot = await adminDb.collection(CARDS_COLLECTION).get();
+    return snapshot.docs
+      .map((doc) => doc.data() as Card)
+      .filter((c) => c.vendedorId === vendedorId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((c) => ({ ...c, cardPassword: undefined }));
   }
 
   static async listAll(): Promise<Card[]> {
-    const snapshot = await adminDb
-      .collection(CARDS_COLLECTION)
-      .where("active", "==", true)
-      .orderBy("createdAt", "desc")
-      .get();
-
-    return snapshot.docs.map((doc) => {
-      const data = doc.data() as Card;
-      return { ...data, cardPassword: undefined };
-    });
+    const snapshot = await adminDb.collection(CARDS_COLLECTION).get();
+    return snapshot.docs
+      .map((doc) => doc.data() as Card)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((c) => ({ ...c, cardPassword: undefined }));
   }
 
   static async update(id: string, data: UpdateCardRequest): Promise<Card> {
@@ -93,7 +87,6 @@ export class CardService {
       updated.cardPassword = encrypt(data.cardPassword);
     }
 
-    // Remove undefined fields before saving
     const cleanData = Object.fromEntries(
       Object.entries(updated).filter(([, v]) => v !== undefined)
     );

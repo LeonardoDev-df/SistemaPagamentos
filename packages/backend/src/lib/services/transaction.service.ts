@@ -89,37 +89,38 @@ export class TransactionService {
     filters: TransactionFilters,
     user: AuthenticatedUser
   ): Promise<PaginatedResponse<Transaction>> {
-    let query: FirebaseFirestore.Query = adminDb.collection(TRANSACTIONS_COLLECTION);
+    // Fetch all and filter in memory to avoid composite index issues
+    const snapshot = await adminDb.collection(TRANSACTIONS_COLLECTION).get();
+    let allTransactions = snapshot.docs.map((doc) => doc.data() as Transaction);
 
+    // Apply filters
     if (filters.status) {
-      query = query.where("status", "==", filters.status);
+      allTransactions = allTransactions.filter((t) => t.status === filters.status);
     }
     if (filters.vendedorId) {
-      query = query.where("vendedorId", "==", filters.vendedorId);
+      allTransactions = allTransactions.filter((t) => t.vendedorId === filters.vendedorId);
     }
     if (filters.compradorId) {
-      query = query.where("compradorId", "==", filters.compradorId);
+      allTransactions = allTransactions.filter((t) => t.compradorId === filters.compradorId);
     }
     if (filters.cardType) {
-      query = query.where("cardType", "==", filters.cardType);
+      allTransactions = allTransactions.filter((t) => t.cardType === filters.cardType);
     }
 
-    query = query.orderBy("createdAt", "desc");
+    // Filter by comprador if not admin
+    if (user.role === "COMPRADOR") {
+      allTransactions = allTransactions.filter((t) => t.compradorId === user.uid);
+    }
 
-    const countSnapshot = await query.count().get();
-    const total = countSnapshot.data().count;
+    // Sort by date desc
+    allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+    const total = allTransactions.length;
     const page = filters.page ?? 1;
     const limit = filters.limit ?? DEFAULT_PAGE_SIZE;
     const offset = (page - 1) * limit;
 
-    if (offset > 0) {
-      query = query.offset(offset);
-    }
-    query = query.limit(limit);
-
-    const snapshot = await query.get();
-    const transactions = snapshot.docs.map((doc) => doc.data() as Transaction);
+    const transactions = allTransactions.slice(offset, offset + limit);
 
     return {
       success: true,
