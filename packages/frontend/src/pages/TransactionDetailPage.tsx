@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, Clock, Copy, Check, Key, Phone, CreditCard, DollarSign } from "lucide-react";
+import { ArrowLeft, Upload, Clock, Copy, Check, Key, Phone, CreditCard, DollarSign, Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
@@ -187,21 +187,21 @@ export function TransactionDetailPage() {
         <div className="border-t pt-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Comprovante de Pagamento</h3>
           {transaction.receiptUrl ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {transaction.receiptUrl.startsWith("data:application/pdf") ? (
-                <Button variant="secondary" size="sm" onClick={() => {
-                  const byteString = atob(transaction.receiptUrl!.split(",")[1]);
-                  const ab = new ArrayBuffer(byteString.length);
-                  const ia = new Uint8Array(ab);
-                  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-                  const blob = new Blob([ab], { type: "application/pdf" });
-                  window.open(URL.createObjectURL(blob), "_blank");
-                }}>
-                  <Upload className="h-4 w-4" /> Ver comprovante (PDF)
-                </Button>
+                <p className="text-sm text-gray-600">Comprovante em PDF</p>
               ) : (
                 <img src={transaction.receiptUrl} alt="Comprovante" className="max-w-full max-h-96 rounded-xl border border-gray-200" />
               )}
+              <Button variant="secondary" size="sm" onClick={() => {
+                const link = document.createElement("a");
+                link.href = transaction.receiptUrl!;
+                const ext = transaction.receiptUrl!.startsWith("data:application/pdf") ? "pdf" : "jpg";
+                link.download = `comprovante_${transaction.vendedorName.replace(/\s+/g, "_")}_${id}.${ext}`;
+                link.click();
+              }}>
+                <Download className="h-4 w-4" /> Baixar Comprovante
+              </Button>
             </div>
           ) : canEdit ? (
             <div>
