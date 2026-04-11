@@ -187,14 +187,22 @@ export function TransactionDetailPage() {
         <div className="border-t pt-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Comprovante de Pagamento</h3>
           {transaction.receiptUrl ? (
-            transaction.receiptUrl.startsWith("data:image/") ? (
-              <img src={transaction.receiptUrl} alt="Comprovante" className="max-w-full max-h-96 rounded-xl border border-gray-200" />
-            ) : (
-              <a href={transaction.receiptUrl} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-primary-600 text-sm font-medium hover:underline">
-                <Upload className="h-4 w-4" /> Ver comprovante
-              </a>
-            )
+            <div className="space-y-2">
+              {transaction.receiptUrl.startsWith("data:application/pdf") ? (
+                <Button variant="secondary" size="sm" onClick={() => {
+                  const byteString = atob(transaction.receiptUrl!.split(",")[1]);
+                  const ab = new ArrayBuffer(byteString.length);
+                  const ia = new Uint8Array(ab);
+                  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+                  const blob = new Blob([ab], { type: "application/pdf" });
+                  window.open(URL.createObjectURL(blob), "_blank");
+                }}>
+                  <Upload className="h-4 w-4" /> Ver comprovante (PDF)
+                </Button>
+              ) : (
+                <img src={transaction.receiptUrl} alt="Comprovante" className="max-w-full max-h-96 rounded-xl border border-gray-200" />
+              )}
+            </div>
           ) : canEdit ? (
             <div>
               <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileUpload} className="hidden" />
