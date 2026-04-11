@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, Plus, CreditCard, Trash2, Phone, Key, FileText, MapPin, Building, Briefcase, ToggleRight, ToggleLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, CreditCard, Trash2, Phone, Key, FileText, MapPin, Building, Briefcase, ToggleRight, ToggleLeft, Eye, EyeOff, Pencil, DollarSign, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -15,6 +15,20 @@ const CARD_TYPE_CONFIG: Record<string, { label: string; color: string; bg: strin
   VR: { label: "Vale Refeição", color: "text-orange-600", bg: "bg-gradient-to-br from-orange-50 to-orange-100", border: "border-orange-200" },
   VA: { label: "Vale Alimentação", color: "text-emerald-600", bg: "bg-gradient-to-br from-emerald-50 to-emerald-100", border: "border-emerald-200" },
 };
+
+const BRAND_OPTIONS = [
+  { value: "Alelo", label: "Alelo" },
+  { value: "Sodexo", label: "Sodexo" },
+  { value: "VR", label: "VR" },
+  { value: "Ticket", label: "Ticket" },
+  { value: "Flash", label: "Flash" },
+  { value: "iFood", label: "iFood Benefícios" },
+  { value: "Swile", label: "Swile" },
+  { value: "Vale shop", label: "Vale Shop" },
+  { value: "Ben", label: "Ben Visa Vale" },
+  { value: "Up Brasil", label: "Up Brasil" },
+  { value: "Outro", label: "Outro" },
+];
 
 function maskCardNumber(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 16);
@@ -31,15 +45,40 @@ export function VendedorDetailPage() {
   const updateCard = useUpdateCard();
 
   const [cardModal, setCardModal] = useState(false);
+  const [detailCard, setDetailCard] = useState<Card | null>(null);
+  const [editCard, setEditCard] = useState<Card | null>(null);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<Omit<CreateCardRequest, "vendedorId">>({
     defaultValues: { cardType: "VR" as const },
   });
 
+  const editForm = useForm<UpdateCardRequest>();
+
   const onCreateCard = async (data: Omit<CreateCardRequest, "vendedorId">) => {
     await createCard.mutateAsync({ ...data, vendedorId: id! });
     setCardModal(false);
     reset({ cardType: "VR" as const });
+  };
+
+  const onEditCard = async (data: UpdateCardRequest) => {
+    if (!editCard) return;
+    const cleanData = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined && v !== "")
+    ) as UpdateCardRequest;
+    await updateCard.mutateAsync({ id: editCard.id, data: cleanData });
+    setEditCard(null);
+  };
+
+  const openEditModal = (card: Card) => {
+    setDetailCard(null);
+    editForm.reset({
+      cardBrand: card.cardBrand,
+      cardNumber: card.cardNumber ?? "",
+      cardPassword: "",
+      valorMensal: card.valorMensal,
+      diaVencimento: card.diaVencimento,
+    });
+    setEditCard(card);
   };
 
   const handleDeleteCard = async (cardId: string) => {
@@ -125,7 +164,14 @@ export function VendedorDetailPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {(cards ?? []).map((card) => (
-              <CardItem key={card.id} card={card} onDelete={handleDeleteCard} onToggle={handleToggleCard} />
+              <CardItem
+                key={card.id}
+                card={card}
+                onDelete={handleDeleteCard}
+                onToggle={handleToggleCard}
+                onDetail={setDetailCard}
+                onEdit={openEditModal}
+              />
             ))}
           </div>
         )}
@@ -144,16 +190,7 @@ export function VendedorDetailPage() {
           />
           <Select
             label="Bandeira *"
-            options={[
-              { value: "Alelo", label: "Alelo" },
-              { value: "Sodexo", label: "Sodexo" },
-              { value: "VR", label: "VR" },
-              { value: "Ticket", label: "Ticket" },
-              { value: "Flash", label: "Flash" },
-              { value: "iFood", label: "iFood Benefícios" },
-              { value: "Swile", label: "Swile" },
-              { value: "Outro", label: "Outro" },
-            ]}
+            options={BRAND_OPTIONS}
             {...register("cardBrand", { required: "Bandeira é obrigatória" })}
             error={errors.cardBrand?.message}
           />
@@ -169,7 +206,6 @@ export function VendedorDetailPage() {
           />
           <Input
             label="Senha do Cartão *"
-            type="password"
             placeholder="Senha numérica do cartão"
             {...register("cardPassword", { required: "Senha é obrigatória" })}
             error={errors.cardPassword?.message}
@@ -197,16 +233,132 @@ export function VendedorDetailPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Card Detail Modal */}
+      <Modal open={!!detailCard} onClose={() => setDetailCard(null)} title="Detalhes do Cartão">
+        {detailCard && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <CreditCard className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">Tipo:</span>
+                <span className="text-sm font-semibold text-gray-900">{CARD_TYPE_CONFIG[detailCard.cardType]?.label}</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <CreditCard className="h-4 w-4 text-gray-400" />
+                <span className="text-sm text-gray-600">Bandeira:</span>
+                <span className="text-sm font-semibold text-gray-900">{detailCard.cardBrand}</span>
+              </div>
+              {detailCard.cardNumber && (
+                <div className="flex items-center gap-2.5">
+                  <FileText className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">Número:</span>
+                  <span className="text-sm font-mono font-semibold text-gray-900">{detailCard.cardNumber}</span>
+                </div>
+              )}
+              {detailCard.cardPassword && (
+                <div className="flex items-center gap-2.5">
+                  <Key className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">Senha:</span>
+                  <span className="text-sm font-mono font-semibold text-gray-900">{detailCard.cardPassword}</span>
+                </div>
+              )}
+              {detailCard.valorMensal != null && (
+                <div className="flex items-center gap-2.5">
+                  <DollarSign className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">Valor Mensal:</span>
+                  <span className="text-sm font-semibold text-gray-900">R$ {detailCard.valorMensal.toFixed(2)}</span>
+                </div>
+              )}
+              {detailCard.diaVencimento != null && (
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">Dia Vencimento:</span>
+                  <span className="text-sm font-semibold text-gray-900">Dia {detailCard.diaVencimento}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2.5">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  detailCard.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+                }`}>
+                  {detailCard.active ? "Ativo" : "Inativo"}
+                </span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setDetailCard(null)}>Fechar</Button>
+              <Button onClick={() => openEditModal(detailCard)}>
+                <Pencil className="h-4 w-4" /> Editar
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit Card Modal */}
+      <Modal open={!!editCard} onClose={() => setEditCard(null)} title="Editar Cartão">
+        {editCard && (
+          <form onSubmit={editForm.handleSubmit(onEditCard)} className="space-y-4">
+            <Select
+              label="Bandeira *"
+              options={BRAND_OPTIONS}
+              {...editForm.register("cardBrand")}
+            />
+            <Input
+              label="Número do Cartão"
+              placeholder="0000 0000 0000 0000"
+              {...editForm.register("cardNumber")}
+              onChange={(e) => {
+                const m = maskCardNumber(e.target.value);
+                e.target.value = m;
+                editForm.setValue("cardNumber", m);
+              }}
+            />
+            <Input
+              label="Nova Senha do Cartão"
+              placeholder="Deixe vazio para manter a atual"
+              {...editForm.register("cardPassword")}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Valor Mensal (R$)"
+                type="number"
+                step="0.01"
+                {...editForm.register("valorMensal", { valueAsNumber: true })}
+              />
+              <Input
+                label="Dia Vencimento"
+                type="number"
+                min={1}
+                max={31}
+                {...editForm.register("diaVencimento", { valueAsNumber: true })}
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="secondary" type="button" onClick={() => setEditCard(null)}>Cancelar</Button>
+              <Button type="submit" loading={updateCard.isPending}>Salvar</Button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
 
-function CardItem({ card, onDelete, onToggle }: { card: Card; onDelete: (id: string) => void; onToggle: (card: Card) => void }) {
-  const [showPass, setShowPass] = useState(false);
+function CardItem({ card, onDelete, onToggle, onDetail, onEdit }: {
+  card: Card;
+  onDelete: (id: string) => void;
+  onToggle: (card: Card) => void;
+  onDetail: (card: Card) => void;
+  onEdit: (card: Card) => void;
+}) {
   const config = CARD_TYPE_CONFIG[card.cardType] ?? CARD_TYPE_CONFIG.VR;
 
   return (
-    <div className={`rounded-xl border-2 p-4 transition-all hover:shadow-md ${config.bg} ${config.border} ${!card.active ? "opacity-60" : ""}`}>
+    <div
+      className={`rounded-xl border-2 p-4 transition-all hover:shadow-md cursor-pointer ${config.bg} ${config.border} ${!card.active ? "opacity-60" : ""}`}
+      onClick={() => onDetail(card)}
+    >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className={`h-11 w-11 rounded-xl flex items-center justify-center bg-white shadow-sm ${config.color}`}>
@@ -217,7 +369,14 @@ function CardItem({ card, onDelete, onToggle }: { card: Card; onDelete: (id: str
             <p className="text-sm text-gray-600 font-semibold">{card.cardBrand}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={() => onEdit(card)}
+            className="p-1 rounded-lg hover:bg-white/60 text-gray-500 hover:text-primary-600 transition-colors"
+            title="Editar"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
           <button
             onClick={() => onToggle(card)}
             className={`p-1 rounded-lg transition-colors ${card.active ? "text-green-600 hover:bg-green-100" : "text-red-500 hover:bg-red-100"}`}
@@ -238,10 +397,13 @@ function CardItem({ card, onDelete, onToggle }: { card: Card; onDelete: (id: str
         {card.cardNumber && (
           <p className="text-xs text-gray-500">Nº: <span className="font-mono font-semibold text-gray-700">{card.cardNumber}</span></p>
         )}
-        {card.valorMensal && (
+        {card.cardPassword && (
+          <p className="text-xs text-gray-500">Senha: <span className="font-mono font-semibold text-gray-700">{card.cardPassword}</span></p>
+        )}
+        {card.valorMensal != null && (
           <p className="text-xs text-gray-500">Valor mensal: <span className="font-semibold text-gray-700">R$ {card.valorMensal.toFixed(2)}</span></p>
         )}
-        {card.diaVencimento && (
+        {card.diaVencimento != null && (
           <p className="text-xs text-gray-500">Vencimento: dia <span className="font-semibold text-gray-700">{card.diaVencimento}</span></p>
         )}
       </div>

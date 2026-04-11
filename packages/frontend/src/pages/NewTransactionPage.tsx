@@ -69,12 +69,11 @@ export function NewTransactionPage() {
       label: v.nome + (v.empresa ? ` (${v.empresa})` : ""),
     }));
 
-  const cardOptions = (cards ?? [])
-    .filter((c) => c.active)
-    .map((c) => ({
-      value: c.id,
-      label: `${c.cardType} - ${c.cardBrand}${c.cardNumber ? ` (${c.cardNumber.slice(-4)})` : ""}${c.valorMensal ? ` - R$ ${c.valorMensal.toFixed(2)}` : ""}`,
-    }));
+  const activeCards = (cards ?? []).filter((c) => c.active);
+  const cardOptions = activeCards.map((c) => ({
+    value: c.id,
+    label: `${c.cardType} - ${c.cardBrand}${c.cardNumber ? ` (${c.cardNumber.slice(-4)})` : ""}${c.valorMensal ? ` - R$ ${c.valorMensal.toFixed(2)}` : ""}`,
+  }));
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -109,7 +108,15 @@ export function NewTransactionPage() {
             label="Cartão"
             options={cardOptions}
             error={errors.cardId?.message}
-            {...register("cardId")}
+            {...register("cardId", {
+              onChange: (e) => {
+                const selected = activeCards.find((c) => c.id === e.target.value);
+                if (selected?.valorMensal) {
+                  setValue("cardValue", selected.valorMensal);
+                  setValue("cardBalance", selected.valorMensal);
+                }
+              },
+            })}
           />
         )}
 
@@ -118,18 +125,14 @@ export function NewTransactionPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Valor do Cartão (R$)"
-                type="number"
-                step="0.01"
-                error={errors.cardValue?.message}
-                {...register("cardValue", { valueAsNumber: true })}
-              />
-              <Input
-                label="Saldo Disponível (R$)"
+                label="Saldo Comprado (R$)"
                 type="number"
                 step="0.01"
                 error={errors.cardBalance?.message}
-                {...register("cardBalance", { valueAsNumber: true })}
+                {...register("cardBalance", {
+                  valueAsNumber: true,
+                  onChange: (e) => setValue("cardValue", Number(e.target.value) || 0),
+                })}
               />
             </div>
 

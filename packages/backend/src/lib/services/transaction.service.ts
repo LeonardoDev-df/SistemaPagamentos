@@ -37,8 +37,8 @@ export class TransactionService {
     const vendedorDoc = await adminDb.collection("vendedores").doc(card.vendedorId).get();
     const vendedorData = vendedorDoc.exists ? vendedorDoc.data()! : null;
     const vendedorName = vendedorData?.nome ?? card.vendedorName;
-    const vendedorPixKey = vendedorData?.pixKey ?? undefined;
-    const vendedorPhone = vendedorData?.phone ?? undefined;
+    const vendedorPixKey = vendedorData?.pixKey;
+    const vendedorPhone = vendedorData?.phone;
 
     const now = new Date().toISOString();
     const docRef = adminDb.collection(TRANSACTIONS_COLLECTION).doc();
@@ -53,33 +53,29 @@ export class TransactionService {
 
       vendedorId: card.vendedorId,
       vendedorName,
-      vendedorPixKey,
-      vendedorPhone,
       compradorId: user.uid,
       compradorName,
-      cardNumber: card.cardNumber,
 
       feePercentage,
       feeAmount,
       netAmount,
 
       status: TransactionStatus.COMPRADO,
-      statusHistory: [
-        {
-          from: TransactionStatus.COMPRADO,
-          to: TransactionStatus.COMPRADO,
-          changedBy: user.uid,
-          changedAt: now,
-          note: "Venda registrada",
-        },
-      ],
+      statusHistory: [],
 
       saleDate: data.saleDate,
       createdAt: now,
       updatedAt: now,
+      ...(vendedorPixKey && { vendedorPixKey }),
+      ...(vendedorPhone && { vendedorPhone }),
+      ...(card.cardNumber && { cardNumber: card.cardNumber }),
     };
 
-    await docRef.set(transaction);
+    const cleanTransaction = Object.fromEntries(
+      Object.entries(transaction).filter(([, v]) => v !== undefined)
+    );
+
+    await docRef.set(cleanTransaction);
     return transaction;
   }
 

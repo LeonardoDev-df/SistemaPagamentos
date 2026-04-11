@@ -37,7 +37,7 @@ export class CardService {
     };
 
     await docRef.set(card);
-    return { ...card, cardPassword: undefined };
+    return { ...card, cardPassword: data.cardPassword };
   }
 
   static async getById(id: string): Promise<Card> {
@@ -63,7 +63,7 @@ export class CardService {
       .map((doc) => doc.data() as Card)
       .filter((c) => c.vendedorId === vendedorId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .map((c) => ({ ...c, cardPassword: undefined }));
+      .map((c) => ({ ...c, cardPassword: c.cardPassword ? decrypt(c.cardPassword) : undefined }));
   }
 
   static async listAll(): Promise<Card[]> {
@@ -71,7 +71,7 @@ export class CardService {
     return snapshot.docs
       .map((doc) => doc.data() as Card)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .map((c) => ({ ...c, cardPassword: undefined }));
+      .map((c) => ({ ...c, cardPassword: c.cardPassword ? decrypt(c.cardPassword) : undefined }));
   }
 
   static async update(id: string, data: UpdateCardRequest): Promise<Card> {
@@ -92,7 +92,7 @@ export class CardService {
     );
 
     await adminDb.collection(CARDS_COLLECTION).doc(id).set(cleanData);
-    return { ...updated, cardPassword: undefined };
+    return { ...updated, cardPassword: data.cardPassword ?? (current.cardPassword ? decrypt(current.cardPassword) : undefined) };
   }
 
   static async delete(id: string): Promise<void> {
