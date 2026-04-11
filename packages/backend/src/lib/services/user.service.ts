@@ -33,13 +33,13 @@ export class UserService {
       email: email.toLowerCase(),
       displayName,
       role,
-      phone,
-      pixKey,
-      cpf,
-      address,
       active: true,
       createdAt: now,
       updatedAt: now,
+      ...(phone && { phone }),
+      ...(pixKey && { pixKey }),
+      ...(cpf && { cpf }),
+      ...(address && { address }),
     };
 
     await adminDb.collection(USERS_COLLECTION).doc(docId).set(user);
