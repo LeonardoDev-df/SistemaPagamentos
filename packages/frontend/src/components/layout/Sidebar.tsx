@@ -49,7 +49,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-5 border-b border-white/10">
-          <div className="flex items-center gap-3">
+          <NavLink to={ROUTES.DASHBOARD} className="flex items-center gap-3" onClick={onClose}>
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-accent-400 to-accent-600 shadow-lg shadow-accent-500/30">
               <CreditCard className="h-5 w-5 text-white" />
             </div>
@@ -57,7 +57,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <span className="font-extrabold text-white text-lg tracking-tight">SisPag</span>
               <p className="text-[10px] text-white/40 -mt-0.5 font-medium">Controle de Pagamentos</p>
             </div>
-          </div>
+          </NavLink>
           <button
             onClick={onClose}
             className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-white/40"
