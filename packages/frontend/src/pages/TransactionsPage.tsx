@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileSpreadsheet, Search, Filter } from "lucide-react";
+import { Plus, FileSpreadsheet, Search, Eye } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Loading } from "@/components/ui/Loading";
+import { TransactionModal } from "@/components/TransactionModal";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useVendedores } from "@/hooks/useVendedores";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +28,8 @@ export function TransactionsPage() {
   let transactions = data?.data ?? [];
   const pagination = data?.pagination;
   const canCreate = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPRADOR;
+  const isVendedor = user?.role === UserRole.VENDEDOR;
+  const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
 
   // Client-side search by vendedor name
   if (searchTerm.trim()) {
@@ -161,9 +164,15 @@ export function TransactionsPage() {
                       <td className="px-5 py-3.5 text-right font-bold text-gray-900 tabular-nums">{formatCurrency(t.netAmount)}</td>
                       <td className="px-5 py-3.5 text-center"><Badge status={t.status} /></td>
                       <td className="px-5 py-3.5 text-right">
-                        <Button size="sm" variant="ghost" onClick={() => navigate(`/transacoes/${t.id}`)}>
-                          {t.status === TransactionStatus.NAO_PAGO || t.status === TransactionStatus.COMPRADO ? "Pagar" : "Ver"}
-                        </Button>
+                        {isVendedor ? (
+                          <Button size="sm" variant="ghost" onClick={() => setSelectedTxId(t.id)}>
+                            <Eye className="h-4 w-4" /> Ver
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" onClick={() => navigate(`/transacoes/${t.id}`)}>
+                            {t.status === TransactionStatus.NAO_PAGO || t.status === TransactionStatus.COMPRADO ? "Pagar" : "Ver"}
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -181,7 +190,7 @@ export function TransactionsPage() {
               <div
                 key={t.id}
                 className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm p-4 active:bg-primary-50/30 transition-colors"
-                onClick={() => navigate(`/transacoes/${t.id}`)}
+                onClick={() => isVendedor ? setSelectedTxId(t.id) : navigate(`/transacoes/${t.id}`)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="min-w-0">
@@ -222,6 +231,12 @@ export function TransactionsPage() {
           )}
         </>
       )}
+
+      <TransactionModal
+        transactionId={selectedTxId}
+        open={!!selectedTxId}
+        onClose={() => setSelectedTxId(null)}
+      />
     </div>
   );
 }

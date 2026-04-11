@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   DollarSign,
   ArrowLeftRight,
@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Loading } from "@/components/ui/Loading";
+import { TransactionModal } from "@/components/TransactionModal";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useCards } from "@/hooks/useCards";
 import { useVendedores } from "@/hooks/useVendedores";
@@ -27,6 +28,7 @@ export function DashboardPage() {
   const { data: allCards } = useCards();
   const { data: vendedores } = useVendedores();
   const navigate = useNavigate();
+  const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
 
   // Due date notifications
   const vencimentos = useMemo(() => {
@@ -193,7 +195,7 @@ export function DashboardPage() {
                     className={`flex items-center justify-between py-3 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition-colors ${
                       i < stats.recentTransactions.length - 1 ? "border-b border-gray-50" : ""
                     }`}
-                    onClick={() => navigate(`/transacoes/${t.id}`)}
+                    onClick={() => setSelectedTxId(t.id)}
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-gray-900 truncate">
@@ -214,6 +216,12 @@ export function DashboardPage() {
           </div>
         </Card>
       </div>
+
+      <TransactionModal
+        transactionId={selectedTxId}
+        open={!!selectedTxId}
+        onClose={() => setSelectedTxId(null)}
+      />
     </div>
   );
 }
