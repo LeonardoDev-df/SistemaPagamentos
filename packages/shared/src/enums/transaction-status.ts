@@ -7,7 +7,7 @@ export enum TransactionStatus {
 }
 
 export const ALLOWED_TRANSITIONS: Record<TransactionStatus, TransactionStatus[]> = {
-  [TransactionStatus.COMPRADO]: [TransactionStatus.NAO_PAGO, TransactionStatus.CARTAO_OK, TransactionStatus.CANCELADO],
+  [TransactionStatus.COMPRADO]: [TransactionStatus.NAO_PAGO, TransactionStatus.CARTAO_OK, TransactionStatus.PAGO, TransactionStatus.CANCELADO],
   [TransactionStatus.NAO_PAGO]: [TransactionStatus.PAGO, TransactionStatus.CANCELADO],
   [TransactionStatus.CARTAO_OK]: [TransactionStatus.NAO_PAGO, TransactionStatus.PAGO],
   [TransactionStatus.PAGO]: [],
