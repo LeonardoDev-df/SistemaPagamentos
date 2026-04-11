@@ -187,10 +187,14 @@ export function TransactionDetailPage() {
         <div className="border-t pt-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Comprovante de Pagamento</h3>
           {transaction.receiptUrl ? (
-            <a href={transaction.receiptUrl} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-primary-600 text-sm font-medium hover:underline">
-              <Upload className="h-4 w-4" /> Ver comprovante
-            </a>
+            transaction.receiptUrl.startsWith("data:image/") ? (
+              <img src={transaction.receiptUrl} alt="Comprovante" className="max-w-full max-h-96 rounded-xl border border-gray-200" />
+            ) : (
+              <a href={transaction.receiptUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-primary-600 text-sm font-medium hover:underline">
+                <Upload className="h-4 w-4" /> Ver comprovante
+              </a>
+            )
           ) : canEdit ? (
             <div>
               <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileUpload} className="hidden" />

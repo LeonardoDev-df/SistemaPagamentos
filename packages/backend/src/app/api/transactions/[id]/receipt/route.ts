@@ -20,8 +20,8 @@ export async function POST(
       throw new ApiError(400, "Arquivo não enviado");
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      throw new ApiError(400, "Arquivo excede 5MB");
+    if (file.size > 500 * 1024) {
+      throw new ApiError(400, "Arquivo excede 500KB. Reduza o tamanho da imagem.");
     }
 
     if (!file.type.startsWith("image/") && file.type !== "application/pdf") {

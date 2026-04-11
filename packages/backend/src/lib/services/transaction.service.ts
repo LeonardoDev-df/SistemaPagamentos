@@ -9,7 +9,7 @@ import {
   PaginatedResponse,
   DEFAULT_PAGE_SIZE,
 } from "@sistema-pagamentos/shared";
-import { adminDb, adminStorage } from "../firebase/admin";
+import { adminDb } from "../firebase/admin";
 import { AuthenticatedUser } from "../middleware/auth";
 import { ApiError } from "../utils/response";
 import { calculateFee } from "../utils/calculations";
@@ -232,22 +232,14 @@ export class TransactionService {
     contentType: string,
     user: AuthenticatedUser
   ): Promise<string> {
-    const transaction = await this.getById(id);
+    await this.getById(id);
 
-    const storagePath = `receipts/${id}/${Date.now()}_${fileName}`;
-    const bucket = adminStorage.bucket();
-    const file = bucket.file(storagePath);
-
-    await file.save(fileBuffer, {
-      metadata: { contentType },
-    });
-
-    await file.makePublic();
-    const receiptUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+    const base64Data = fileBuffer.toString("base64");
+    const receiptUrl = `data:${contentType};base64,${base64Data}`;
 
     await adminDb.collection(TRANSACTIONS_COLLECTION).doc(id).update({
       receiptUrl,
-      receiptPath: storagePath,
+      receiptFileName: fileName,
       updatedAt: new Date().toISOString(),
     });
 
