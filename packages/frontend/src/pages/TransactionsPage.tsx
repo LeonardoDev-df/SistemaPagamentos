@@ -33,10 +33,23 @@ export function TransactionsPage() {
   const isVendedor = user?.role === UserRole.VENDEDOR;
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
 
+  // Month filter - default to current month
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja apagar esta transação? Esta ação será registrada nos logs.")) return;
     await deleteTransaction.mutateAsync(id);
   };
+
+  // Month filter
+  if (selectedMonth) {
+    const [year, month] = selectedMonth.split("-").map(Number);
+    transactions = transactions.filter(t => {
+      const d = new Date(t.saleDate);
+      return d.getFullYear() === year && d.getMonth() + 1 === month;
+    });
+  }
 
   // Client-side search by vendedor name
   if (searchTerm.trim()) {
@@ -47,11 +60,24 @@ export function TransactionsPage() {
     );
   }
 
-  // Count by status for quick filters
-  const allTx = data?.data ?? [];
+  // Available months
+  const allTxRaw = data?.data ?? [];
+  const availableMonths = (() => {
+    const months = new Set<string>();
+    for (const t of allTxRaw) {
+      const d = new Date(t.saleDate);
+      months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    months.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+    return Array.from(months).sort().reverse();
+  })();
+
+  // Count by status for quick filters (after month filter)
+  const allTx = transactions;
   const countNaoPago = allTx.filter(t => t.status === TransactionStatus.NAO_PAGO).length;
   const countPago = allTx.filter(t => t.status === TransactionStatus.PAGO).length;
   const countComprado = allTx.filter(t => t.status === TransactionStatus.COMPRADO).length;
+  const countUsado = allTx.filter(t => t.status === TransactionStatus.USADO).length;
 
   return (
     <div className="space-y-5">
@@ -63,7 +89,18 @@ export function TransactionsPage() {
             {pagination ? `${pagination.total} registros` : "Carregando..."}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 focus:outline-none font-medium"
+          >
+            {availableMonths.map((m) => {
+              const [y, mo] = m.split("-");
+              const label = new Date(Number(y), Number(mo) - 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+              return <option key={m} value={m}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>;
+            })}
+          </select>
           <Button variant="secondary" size="sm" onClick={() => transactionService.exportCsv(filters)}>
             <FileSpreadsheet className="h-4 w-4" />
             <span className="hidden sm:inline">Exportar</span>
@@ -85,6 +122,7 @@ export function TransactionsPage() {
           { label: "Não Pagos", value: "NAO_PAGO", count: countNaoPago, color: "text-yellow-700 bg-yellow-50 border-yellow-200" },
           { label: "Comprados", value: "COMPRADO", count: countComprado, color: "text-blue-700 bg-blue-50 border-blue-200" },
           { label: "Pagos", value: "PAGO", count: countPago, color: "text-green-700 bg-green-50 border-green-200" },
+          { label: "Usados", value: "USADO", count: countUsado, color: "text-gray-700 bg-gray-50 border-gray-300" },
         ].map(tab => (
           <button
             key={tab.value}

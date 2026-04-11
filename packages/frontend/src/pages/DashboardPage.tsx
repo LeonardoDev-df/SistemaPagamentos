@@ -10,6 +10,8 @@ import {
   XCircle,
   Bell,
   AlertTriangle,
+  PackageCheck,
+  Calendar,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/Card";
@@ -31,9 +33,45 @@ export function DashboardPage() {
   const { data: vendedores } = useVendedores();
   const navigate = useNavigate();
   const { data: txData } = useTransactions({ limit: 1000 });
-  const allTransactions = txData?.data ?? [];
+  const allTransactionsRaw = txData?.data ?? [];
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
   const [detailModal, setDetailModal] = useState<string | null>(null);
+
+  // Month filter - default to current month
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+
+  const allTransactions = useMemo(() => {
+    if (!selectedMonth) return allTransactionsRaw;
+    const [year, month] = selectedMonth.split("-").map(Number);
+    return allTransactionsRaw.filter(t => {
+      const d = new Date(t.saleDate);
+      return d.getFullYear() === year && d.getMonth() + 1 === month;
+    });
+  }, [allTransactionsRaw, selectedMonth]);
+
+  // Compute filtered stats
+  const filteredStats = useMemo(() => {
+    const pagos = allTransactions.filter(t => t.status === TransactionStatus.PAGO).length;
+    const naoPagos = allTransactions.filter(t => t.status === TransactionStatus.NAO_PAGO || t.status === TransactionStatus.COMPRADO).length;
+    const usados = allTransactions.filter(t => t.status === TransactionStatus.USADO).length;
+    const totalCardValue = allTransactions.reduce((s, t) => s + t.cardValue, 0);
+    const totalFeeAmount = allTransactions.reduce((s, t) => s + t.feeAmount, 0);
+    const totalNetAmount = allTransactions.reduce((s, t) => s + t.netAmount, 0);
+    return { pagos, naoPagos, usados, total: allTransactions.length, totalCardValue, totalFeeAmount, totalNetAmount };
+  }, [allTransactions]);
+
+  // Available months from all transactions
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    for (const t of allTransactionsRaw) {
+      const d = new Date(t.saleDate);
+      months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    // Always include current month
+    months.add(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+    return Array.from(months).sort().reverse();
+  }, [allTransactionsRaw]);
 
   // Due date notifications
   const vencimentos = useMemo(() => {
@@ -151,14 +189,30 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Resumo das operações</p>
+      {/* Header + Month Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">Resumo das operações</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-gray-400" />
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 focus:outline-none font-medium"
+          >
+            {availableMonths.map((m) => {
+              const [y, mo] = m.split("-");
+              const label = new Date(Number(y), Number(mo) - 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+              return <option key={m} value={m}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>;
+            })}
+          </select>
+        </div>
       </div>
 
       {/* Main Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="cursor-pointer" onClick={() => setDetailModal("cartoes")}>
           <Card
             title="Total Cartões"
@@ -169,21 +223,28 @@ export function DashboardPage() {
         <div className="cursor-pointer" onClick={() => setDetailModal("pagos")}>
           <Card
             title="Pagos"
-            value={String(stats.cartoesPagos)}
+            value={String(filteredStats.pagos)}
             icon={<CheckCircle className="h-5 w-5" />}
           />
         </div>
         <div className="cursor-pointer" onClick={() => setDetailModal("naoPagos")}>
           <Card
             title="Não Pagos"
-            value={String(stats.cartoesNaoPagos)}
+            value={String(filteredStats.naoPagos)}
             icon={<XCircle className="h-5 w-5" />}
+          />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailModal("usados")}>
+          <Card
+            title="Usados"
+            value={String(filteredStats.usados)}
+            icon={<PackageCheck className="h-5 w-5" />}
           />
         </div>
         <div className="cursor-pointer" onClick={() => setDetailModal("transacoes")}>
           <Card
             title="Transações"
-            value={String(stats.totalTransactions)}
+            value={String(filteredStats.total)}
             icon={<ArrowLeftRight className="h-5 w-5" />}
           />
         </div>
@@ -194,21 +255,21 @@ export function DashboardPage() {
         <div className="cursor-pointer" onClick={() => setDetailModal("totalComprado")}>
           <Card
             title="Total Comprado"
-            value={formatCurrency(stats.totalCardValue)}
+            value={formatCurrency(filteredStats.totalCardValue)}
             icon={<DollarSign className="h-5 w-5" />}
           />
         </div>
         <div className="cursor-pointer" onClick={() => setDetailModal("descontos")}>
           <Card
             title="Descontos"
-            value={formatCurrency(stats.totalFeeAmount)}
+            value={formatCurrency(filteredStats.totalFeeAmount)}
             icon={<TrendingUp className="h-5 w-5" />}
           />
         </div>
         <div className="cursor-pointer" onClick={() => setDetailModal("totalPago")}>
           <Card
             title="Total Pago a Vendedores"
-            value={formatCurrency(stats.totalNetAmount)}
+            value={formatCurrency(filteredStats.totalNetAmount)}
             icon={<Wallet className="h-5 w-5" />}
           />
         </div>
@@ -309,6 +370,7 @@ export function DashboardPage() {
           detailModal === "cartoes" ? "Total de Cartões" :
           detailModal === "pagos" ? "Transações Pagas" :
           detailModal === "naoPagos" ? "Transações Não Pagas" :
+          detailModal === "usados" ? "Cartões Usados" :
           detailModal === "transacoes" ? "Todas as Transações" :
           detailModal === "totalComprado" ? "Total Comprado" :
           detailModal === "descontos" ? "Descontos Aplicados" :
@@ -346,6 +408,7 @@ function DashboardDetailContent({ type, stats, transactions, cards, vendedores, 
     switch (type) {
       case "pagos": return transactions.filter(t => t.status === TransactionStatus.PAGO);
       case "naoPagos": return transactions.filter(t => t.status === TransactionStatus.NAO_PAGO || t.status === TransactionStatus.COMPRADO);
+      case "usados": return transactions.filter(t => t.status === TransactionStatus.USADO);
       case "transacoes": return transactions;
       case "totalComprado":
       case "descontos":
