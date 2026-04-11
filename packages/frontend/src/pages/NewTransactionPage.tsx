@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -26,6 +26,7 @@ export function NewTransactionPage() {
   const [selectedVendedor, setSelectedVendedor] = useState("");
   const { data: cards } = useCards(selectedVendedor || undefined);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [markAsPaid, setMarkAsPaid] = useState(true);
 
   const {
     register,
@@ -53,7 +54,7 @@ export function NewTransactionPage() {
   const netAmount = cardBalance ? Math.round((cardBalance - feeAmount) * 100) / 100 : 0;
 
   const onSubmit = async (data: CreateTransactionRequest) => {
-    const result = await createTransaction.mutateAsync(data);
+    const result = await createTransaction.mutateAsync({ ...data, markAsPaid });
 
     if (receiptFile && result?.id) {
       try {
@@ -173,6 +174,28 @@ export function NewTransactionPage() {
                   onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
                 />
               </label>
+            </div>
+
+            {/* Mark as paid toggle */}
+            <div
+              className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                markAsPaid
+                  ? "bg-green-50 border-green-300"
+                  : "bg-gray-50 border-gray-200"
+              }`}
+              onClick={() => setMarkAsPaid(!markAsPaid)}
+            >
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Já foi pago ao vendedor?</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {markAsPaid ? "Sim — será registrado como PAGO" : "Não — ficará como COMPRADO (pendente de pagamento)"}
+                </p>
+              </div>
+              <div className={`h-6 w-6 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                markAsPaid ? "bg-green-500 text-white" : "bg-gray-200"
+              }`}>
+                {markAsPaid && <Check className="h-4 w-4" />}
+              </div>
             </div>
 
             {/* Summary */}

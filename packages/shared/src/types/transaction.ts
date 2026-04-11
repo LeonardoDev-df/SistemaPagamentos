@@ -46,6 +46,7 @@ export interface CreateTransactionRequest {
   cardBalance: number;
   saleDate: string;
   feePercentage?: number;
+  markAsPaid?: boolean;
 }
 
 export interface UpdateTransactionRequest {

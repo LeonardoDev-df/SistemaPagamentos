@@ -74,12 +74,13 @@ export class TransactionService {
       feeAmount,
       netAmount,
 
-      status: TransactionStatus.COMPRADO,
+      status: data.markAsPaid ? TransactionStatus.PAGO : TransactionStatus.COMPRADO,
       statusHistory: [],
 
       saleDate: data.saleDate,
       createdAt: now,
       updatedAt: now,
+      ...(data.markAsPaid && { paymentDate: now }),
       ...(vendedorPixKey && { vendedorPixKey }),
       ...(vendedorPhone && { vendedorPhone }),
       ...(card.cardNumber && { cardNumber: card.cardNumber }),
