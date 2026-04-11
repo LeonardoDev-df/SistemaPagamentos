@@ -44,11 +44,13 @@ export function useUpdateStatus() {
       id,
       status,
       note,
+      remainingBalance,
     }: {
       id: string;
       status: TransactionStatus;
       note?: string;
-    }) => transactionService.updateStatus(id, status, note),
+      remainingBalance?: number;
+    }) => transactionService.updateStatus(id, status, note, remainingBalance),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["transaction"] });

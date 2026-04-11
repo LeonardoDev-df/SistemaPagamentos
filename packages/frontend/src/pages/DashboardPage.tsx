@@ -62,6 +62,22 @@ export function DashboardPage() {
     return alerts.sort((a, b) => a.diasRestantes - b.diasRestantes);
   }, [allCards, vendedores]);
 
+  // Alert for cards approaching 30-day usage deadline
+  const prazosUso = useMemo(() => {
+    const pagos = allTransactions.filter(t => t.status === TransactionStatus.PAGO);
+    const today = new Date();
+    return pagos
+      .map(t => {
+        const saleDate = new Date(t.saleDate);
+        const deadline = new Date(saleDate);
+        deadline.setDate(deadline.getDate() + 30);
+        const diasRestantes = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return { ...t, diasRestantes };
+      })
+      .filter(t => t.diasRestantes <= 10)
+      .sort((a, b) => a.diasRestantes - b.diasRestantes);
+  }, [allTransactions]);
+
   if (isLoading) return <Loading />;
   if (!stats) return <p className="text-gray-500">Sem dados disponíveis.</p>;
 
@@ -92,6 +108,42 @@ export function DashboardPage() {
                   v.diasRestantes === 0 ? "bg-red-100 text-red-700" : v.diasRestantes <= 2 ? "bg-orange-100 text-orange-700" : "bg-amber-100 text-amber-700"
                 }`}>
                   {v.diasRestantes === 0 ? "Hoje!" : `${v.diasRestantes}d`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 30-day usage deadline alerts */}
+      {prazosUso.length > 0 && (
+        <div className={`border rounded-xl p-4 space-y-2 ${
+          prazosUso.some(t => t.diasRestantes <= 0) ? "bg-red-50 border-red-200" : "bg-blue-50 border-blue-200"
+        }`}>
+          <div className={`flex items-center gap-2 font-semibold text-sm ${
+            prazosUso.some(t => t.diasRestantes <= 0) ? "text-red-800" : "text-blue-800"
+          }`}>
+            <CreditCard className="h-4 w-4" />
+            Prazo de Uso ({prazosUso.length}) — 30 dias para usar
+          </div>
+          <div className="space-y-1.5">
+            {prazosUso.slice(0, 5).map((t) => (
+              <div
+                key={t.id}
+                className="flex items-center justify-between text-sm cursor-pointer hover:bg-white/50 -mx-1 px-1 rounded-lg transition-colors"
+                onClick={() => setSelectedTxId(t.id)}
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className={`h-3.5 w-3.5 shrink-0 ${t.diasRestantes <= 0 ? "text-red-500" : t.diasRestantes <= 5 ? "text-orange-500" : "text-blue-500"}`} />
+                  <span className="text-gray-700">
+                    <span className="font-medium">{t.vendedorName}</span>
+                    {" — "}{t.cardBrand} {t.cardType} ({formatCurrency(t.cardBalance)})
+                  </span>
+                </div>
+                <span className={`font-semibold text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                  t.diasRestantes <= 0 ? "bg-red-100 text-red-700" : t.diasRestantes <= 5 ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"
+                }`}>
+                  {t.diasRestantes <= 0 ? "Vencido!" : `${t.diasRestantes}d`}
                 </span>
               </div>
             ))}

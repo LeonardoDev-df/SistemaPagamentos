@@ -5,6 +5,7 @@ export const STATUS_COLORS: Record<TransactionStatus, { bg: string; text: string
   [TransactionStatus.NAO_PAGO]: { bg: "bg-yellow-100", text: "text-yellow-800" },
   [TransactionStatus.PAGO]: { bg: "bg-green-100", text: "text-green-800" },
   [TransactionStatus.CARTAO_OK]: { bg: "bg-purple-100", text: "text-purple-800" },
+  [TransactionStatus.USADO]: { bg: "bg-gray-100", text: "text-gray-800" },
   [TransactionStatus.CANCELADO]: { bg: "bg-red-100", text: "text-red-800" },
 };
 

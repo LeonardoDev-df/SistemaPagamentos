@@ -13,13 +13,13 @@ export async function PUT(
     requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
 
     const { id } = await params;
-    const { status, note } = await req.json();
+    const { status, note, remainingBalance } = await req.json();
 
     if (!status || !Object.values(TransactionStatus).includes(status)) {
       return apiError(new Error("Status inválido"), 400);
     }
 
-    const updated = await TransactionService.updateStatus(id, status, note, user);
+    const updated = await TransactionService.updateStatus(id, status, note, user, remainingBalance);
     return apiResponse(updated);
   } catch (error) {
     return apiError(error);

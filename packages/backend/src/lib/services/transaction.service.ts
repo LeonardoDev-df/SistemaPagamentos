@@ -155,7 +155,8 @@ export class TransactionService {
     id: string,
     newStatus: TransactionStatus,
     note: string | undefined,
-    user: AuthenticatedUser
+    user: AuthenticatedUser,
+    remainingBalance?: number
   ): Promise<Transaction> {
     const docRef = adminDb.collection(TRANSACTIONS_COLLECTION).doc(id);
 
@@ -184,7 +185,7 @@ export class TransactionService {
         note,
       };
 
-      const updates: Partial<Transaction> = {
+      const updates: Record<string, unknown> = {
         status: newStatus,
         statusHistory: [...transaction.statusHistory, statusChange],
         updatedAt: now,
@@ -194,8 +195,13 @@ export class TransactionService {
         updates.paymentDate = now;
       }
 
+      if (newStatus === TransactionStatus.USADO) {
+        updates.cardBalance = remainingBalance ?? 0;
+        updates.usedAt = now;
+      }
+
       t.update(docRef, updates);
-      return { ...transaction, ...updates, cardPassword: undefined };
+      return { ...transaction, ...updates };
     });
 
     return result;

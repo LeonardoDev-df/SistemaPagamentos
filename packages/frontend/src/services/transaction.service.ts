@@ -40,10 +40,10 @@ export const transactionService = {
     return res.data.data!;
   },
 
-  async updateStatus(id: string, status: TransactionStatus, note?: string) {
+  async updateStatus(id: string, status: TransactionStatus, note?: string, remainingBalance?: number) {
     const res = await api.put<ApiResponse<Transaction>>(
       `/api/transactions/${id}/status`,
-      { status, note }
+      { status, note, remainingBalance }
     );
     return res.data.data!;
   },

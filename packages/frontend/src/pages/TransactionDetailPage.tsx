@@ -30,6 +30,7 @@ export function TransactionDetailPage() {
   const [statusNote, setStatusNote] = useState("");
   const [paymentReceipt, setPaymentReceipt] = useState<File | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [usedBalance, setUsedBalance] = useState<string>("0");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (isLoading) return <Loading />;
@@ -38,6 +39,28 @@ export function TransactionDetailPage() {
   const canEdit = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPRADOR;
   const allowedTransitions = ALLOWED_TRANSITIONS[transaction.status];
   const isPendingPayment = transaction.status === TransactionStatus.NAO_PAGO || transaction.status === TransactionStatus.COMPRADO || transaction.status === TransactionStatus.CARTAO_OK;
+
+  // Calculate days remaining to use the card (30 days from purchase)
+  const diasParaUsar = (() => {
+    if (transaction.status !== TransactionStatus.PAGO) return null;
+    const saleDate = new Date(transaction.saleDate);
+    const deadline = new Date(saleDate);
+    deadline.setDate(deadline.getDate() + 30);
+    const today = new Date();
+    const diff = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diff;
+  })();
+
+  const handleMarkAsUsed = async () => {
+    const remaining = parseFloat(usedBalance) || 0;
+    await updateStatus.mutateAsync({
+      id: id!,
+      status: TransactionStatus.USADO,
+      note: remaining > 0 ? `Saldo restante: R$ ${remaining.toFixed(2)}` : "Saldo zerado",
+      remainingBalance: remaining,
+    });
+    toast.success("Cartão marcado como usado!");
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -154,6 +177,55 @@ export function TransactionDetailPage() {
             <DollarSign className="h-5 w-5" />
             Registrar Pagamento
           </Button>
+        </div>
+      )}
+
+      {/* Use card alert - 30 day deadline */}
+      {canEdit && transaction.status === TransactionStatus.PAGO && diasParaUsar !== null && (
+        <div className={`rounded-2xl p-5 border ${
+          diasParaUsar <= 0 ? "bg-red-50 border-red-200" :
+          diasParaUsar <= 7 ? "bg-orange-50 border-orange-200" :
+          "bg-blue-50 border-blue-200"
+        }`}>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className={`text-sm font-bold ${
+                diasParaUsar <= 0 ? "text-red-800" : diasParaUsar <= 7 ? "text-orange-800" : "text-blue-800"
+              }`}>
+                {diasParaUsar <= 0 ? "Prazo expirado!" : `${diasParaUsar} dia(s) restante(s) para usar o cartão`}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">Prazo de 30 dias a partir da compra</p>
+            </div>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+              diasParaUsar <= 0 ? "bg-red-100 text-red-700" :
+              diasParaUsar <= 7 ? "bg-orange-100 text-orange-700" :
+              "bg-blue-100 text-blue-700"
+            }`}>
+              {diasParaUsar <= 0 ? "Vencido" : `${diasParaUsar}d`}
+            </span>
+          </div>
+          <div className="space-y-2">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Saldo restante no cartão (R$)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={usedBalance}
+                onChange={(e) => setUsedBalance(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 focus:outline-none"
+                placeholder="0.00 = saldo zerado"
+              />
+            </div>
+            <Button
+              className="w-full"
+              variant={diasParaUsar <= 7 ? "accent" : "secondary"}
+              onClick={handleMarkAsUsed}
+              loading={updateStatus.isPending}
+            >
+              <Check className="h-4 w-4" /> Marcar como Usado
+            </Button>
+          </div>
         </div>
       )}
 
