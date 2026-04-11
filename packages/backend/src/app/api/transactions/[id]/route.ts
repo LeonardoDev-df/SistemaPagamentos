@@ -53,10 +53,10 @@ export async function DELETE(
 ) {
   try {
     const user = await authenticateRequest(req);
-    requireRole(UserRole.ADMIN)(user);
+    requireRole(UserRole.ADMIN, UserRole.COMPRADOR)(user);
 
     const { id } = await params;
-    await TransactionService.delete(id);
+    await TransactionService.delete(id, user);
     return apiResponse({ message: "Transação removida com sucesso" });
   } catch (error) {
     return apiError(error);

@@ -56,7 +56,11 @@ export function NewTransactionPage() {
     const result = await createTransaction.mutateAsync(data);
 
     if (receiptFile && result?.id) {
-      await uploadReceipt.mutateAsync({ id: result.id, file: receiptFile });
+      try {
+        await uploadReceipt.mutateAsync({ id: result.id, file: receiptFile });
+      } catch {
+        // Receipt upload failed but transaction was created successfully
+      }
     }
 
     navigate(ROUTES.TRANSACTIONS);

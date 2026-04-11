@@ -26,6 +26,20 @@ export class TransactionService {
     // Get card info
     const card = await CardService.getById(data.cardId);
 
+    // Block duplicate: check if card already has an active (non-paid, non-cancelled) transaction
+    const existingSnapshot = await adminDb.collection(TRANSACTIONS_COLLECTION).get();
+    const activeForCard = existingSnapshot.docs
+      .map((doc) => doc.data() as Transaction)
+      .find(
+        (t) =>
+          t.cardId === data.cardId &&
+          t.status !== TransactionStatus.PAGO &&
+          t.status !== TransactionStatus.CANCELADO
+      );
+    if (activeForCard) {
+      throw new ApiError(400, "Este cartão já possui uma compra ativa. Pague ou cancele a anterior antes de registrar outra.");
+    }
+
     const feePercentage = data.feePercentage ?? (await SettingsService.getDefaultFeePercentage());
     const { feeAmount, netAmount } = calculateFee(data.cardBalance, feePercentage);
 
@@ -213,11 +227,26 @@ export class TransactionService {
     return this.getById(id);
   }
 
-  static async delete(id: string): Promise<void> {
+  static async delete(id: string, user: AuthenticatedUser): Promise<void> {
     const transaction = await this.getById(id);
-    if (transaction.status === TransactionStatus.PAGO) {
-      throw new ApiError(400, "Não é possível excluir transação paga");
-    }
+
+    // Log deletion to audit collection
+    await adminDb.collection("audit_logs").add({
+      action: "TRANSACTION_DELETED",
+      transactionId: id,
+      transaction: {
+        vendedorName: transaction.vendedorName,
+        cardBrand: transaction.cardBrand,
+        cardType: transaction.cardType,
+        cardBalance: transaction.cardBalance,
+        netAmount: transaction.netAmount,
+        status: transaction.status,
+        saleDate: transaction.saleDate,
+      },
+      deletedBy: user.uid,
+      deletedAt: new Date().toISOString(),
+    });
+
     await adminDb.collection(TRANSACTIONS_COLLECTION).doc(id).delete();
   }
 

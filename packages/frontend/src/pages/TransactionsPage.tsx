@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FileSpreadsheet, Search, Eye } from "lucide-react";
+import { Plus, FileSpreadsheet, Search, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Loading } from "@/components/ui/Loading";
 import { TransactionModal } from "@/components/TransactionModal";
-import { useTransactions } from "@/hooks/useTransactions";
+import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useVendedores } from "@/hooks/useVendedores";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDate } from "@/utils/format";
@@ -27,9 +27,16 @@ export function TransactionsPage() {
 
   let transactions = data?.data ?? [];
   const pagination = data?.pagination;
+  const deleteTransaction = useDeleteTransaction();
   const canCreate = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPRADOR;
+  const canDelete = user?.role === UserRole.ADMIN || user?.role === UserRole.COMPRADOR;
   const isVendedor = user?.role === UserRole.VENDEDOR;
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja apagar esta transação? Esta ação será registrada nos logs.")) return;
+    await deleteTransaction.mutateAsync(id);
+  };
 
   // Client-side search by vendedor name
   if (searchTerm.trim()) {
@@ -164,15 +171,26 @@ export function TransactionsPage() {
                       <td className="px-5 py-3.5 text-right font-bold text-gray-900 tabular-nums">{formatCurrency(t.netAmount)}</td>
                       <td className="px-5 py-3.5 text-center"><Badge status={t.status} /></td>
                       <td className="px-5 py-3.5 text-right">
-                        {isVendedor ? (
-                          <Button size="sm" variant="ghost" onClick={() => setSelectedTxId(t.id)}>
-                            <Eye className="h-4 w-4" /> Ver
-                          </Button>
-                        ) : (
-                          <Button size="sm" variant="ghost" onClick={() => navigate(`/transacoes/${t.id}`)}>
-                            {t.status === TransactionStatus.NAO_PAGO || t.status === TransactionStatus.COMPRADO ? "Pagar" : "Ver"}
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-end gap-1">
+                          {isVendedor ? (
+                            <Button size="sm" variant="ghost" onClick={() => setSelectedTxId(t.id)}>
+                              <Eye className="h-4 w-4" /> Ver
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" onClick={() => navigate(`/transacoes/${t.id}`)}>
+                              {t.status === TransactionStatus.NAO_PAGO || t.status === TransactionStatus.COMPRADO ? "Pagar" : "Ver"}
+                            </Button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDelete(t.id)}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                              title="Apagar transação"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
